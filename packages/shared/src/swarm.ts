@@ -10,7 +10,12 @@ export async function swarmUpload(
   opts: { beeUrl: string; batchId?: string; timeoutMs?: number },
 ): Promise<string> {
   const headers: Record<string, string> = { "content-type": "application/octet-stream" }
-  if (opts.batchId) headers["swarm-postage-batch-id"] = opts.batchId
+  if (opts.batchId) {
+    headers["swarm-postage-batch-id"] = opts.batchId
+    // Bee 2.x defaults to deferred uploads: it answers once the chunks are stored *locally* and pushes them
+    // later. On a light node that can leave data unreachable from the network. Wait for the push instead.
+    headers["swarm-deferred-upload"] = "false"
+  }
   const res = await fetch(`${opts.beeUrl}/bytes`, {
     method: "POST",
     headers,

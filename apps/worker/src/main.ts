@@ -58,6 +58,48 @@ app.get("/health", async (c) => {
   })
 })
 
+/**
+ * Swarm proof for a reference stored by our node: peer count, and Bee's own network-retrievability check
+ * (stewardship). POST re-pushes the chunks if they aren't retrievable yet. Read-only data, plain refs only.
+ */
+app.get("/swarm/:ref", async (c) => {
+  const ref = c.req.param("ref")
+  if (!/^[0-9a-f]{64}$/.test(ref))
+    return c.json({ error: { code: "invalid", message: "Not a Swarm reference" } }, 400)
+  const get = async (path: string) => {
+    try {
+      const r = await fetch(`${env.BEE_URL}${path}`, { signal: AbortSignal.timeout(30_000) })
+      return { status: r.status, body: (await r.json().catch(() => ({}))) as Record<string, unknown> }
+    } catch (e) {
+      return { status: 0, body: { error: (e as Error).message } }
+    }
+  }
+  const [peers, steward, local] = await Promise.all([
+    get("/peers"),
+    get(`/stewardship/${ref}`),
+    get(`/chunks/${ref}`),
+  ])
+  return c.json({
+    ref,
+    peers: Array.isArray(peers.body.peers) ? peers.body.peers.length : null,
+    storedOnOurNode: local.status === 200,
+    retrievableOnNetwork: steward.body.isRetrievable ?? null,
+    gateway: `https://api.gateway.ethswarm.org/bytes/${ref}`,
+  })
+})
+
+app.post("/swarm/:ref/push", async (c) => {
+  const ref = c.req.param("ref")
+  if (!/^[0-9a-f]{64}$/.test(ref))
+    return c.json({ error: { code: "invalid", message: "Not a Swarm reference" } }, 400)
+  const r = await fetch(`${env.BEE_URL}/stewardship/${ref}`, {
+    method: "PUT",
+    headers: { "swarm-postage-batch-id": env.SWARM_BATCH_ID },
+    signal: AbortSignal.timeout(120_000),
+  }).catch((e: Error) => ({ status: 0, text: async () => e.message }))
+  return c.json({ ref, repushStatus: r.status, detail: (await r.text()).slice(0, 200) })
+})
+
 app.notFound((c) => c.json({ error: { code: "not_found", message: "Not found" } }, 404))
 app.onError((e, c) => {
   console.error("[worker]", e)
