@@ -274,9 +274,7 @@ export function ClaimFlow({ taskKey, title }: { taskKey: `0x${string}`; title: s
         {label}
       </Button>
       {phase.kind === "saving" ? (
-        <p className="mt-2 text-center text-[13px] text-muted-foreground">
-          Writing to Arkiv takes about 7 seconds.
-        </p>
+        <p className="mt-2 text-center text-[13px] text-muted-foreground">Recording your claim on Arkiv…</p>
       ) : null}
       {phase.kind === "world" ? (
         <IDKitRequestWidget
