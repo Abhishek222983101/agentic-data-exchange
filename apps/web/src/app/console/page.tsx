@@ -203,28 +203,35 @@ async function Approvals() {
           <div className="text-[13px] font-medium text-warning">Waiting for you</div>
           <h2 className="mt-1 text-[20px] font-semibold tracking-[-0.02em]">Approve {a.amount} USDC?</h2>
           <p className="mt-1 text-[14px] text-muted-foreground">
-            Above the agent's limit. Scan with your phone and confirm with World ID. Nothing is paid unless
-            you approve.
+            Above the agent's limit, so it needs a person. Nothing is paid unless you approve.
           </p>
-          <div className="mt-4 flex items-center gap-4">
-            {/* biome-ignore lint/security/noDangerouslySetInnerHtml: SVG generated server-side from a World URL we validated */}
-            <div
-              className="size-[140px] shrink-0 rounded-xl bg-white p-1.5"
-              dangerouslySetInnerHTML={{ __html: a.qrSvg }}
-            />
-            <div className="min-w-0 text-[13px]">
-              <div className="text-muted-foreground">Code</div>
-              <div className="font-mono text-[16px] tabular">{a.userCode}</div>
-              <a
-                href={a.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-2 inline-block font-medium underline underline-offset-4"
-              >
-                Open on this device
-              </a>
-            </div>
-          </div>
+          <ol className="mt-3 space-y-1.5 text-[14px]">
+            <li>
+              <span className="font-medium">1.</span> Open World's approval page{" "}
+              <span className="text-muted-foreground">on this computer</span>
+            </li>
+            <li>
+              <span className="font-medium">2.</span> Scan the QR code{" "}
+              <span className="text-muted-foreground">on World's page</span> with World App and approve
+            </li>
+          </ol>
+          <a
+            href={a.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-4 inline-flex h-11 w-full items-center justify-center rounded-xl bg-foreground px-4 text-[15px] font-semibold text-background hover:opacity-90"
+          >
+            Open World's approval page
+          </a>
+          <p className="mt-3 text-[13px] text-muted-foreground">
+            Code <span className="font-mono text-foreground tabular">{a.userCode}</span>. Only have a phone?
+            Scan this instead:
+          </p>
+          {/* biome-ignore lint/security/noDangerouslySetInnerHtml: SVG generated server-side from a validated World URL */}
+          <div
+            className="mt-2 size-[110px] rounded-lg bg-white p-1"
+            dangerouslySetInnerHTML={{ __html: a.qrSvg }}
+          />
         </section>
       ))}
     </>
