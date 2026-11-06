@@ -211,8 +211,12 @@ async function Approvals() {
               <span className="text-muted-foreground">on this computer</span>
             </li>
             <li>
-              <span className="font-medium">2.</span> Scan the QR code{" "}
-              <span className="text-muted-foreground">on World's page</span> with World App and approve
+              <span className="font-medium">2.</span> Click{" "}
+              <span className="font-medium">Continue with World ID</span>{" "}
+              <span className="text-muted-foreground">(not passkey)</span>
+            </li>
+            <li>
+              <span className="font-medium">3.</span> Scan World's QR with World App and approve
             </li>
           </ol>
           <a

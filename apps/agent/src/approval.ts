@@ -8,8 +8,8 @@ const ISSUER = "https://auth.world.org"
 const DEVICE = `${ISSUER}/api/v1/device_authorization`
 const TOKEN = `${ISSUER}/api/v1/token`
 const JWKS = createRemoteJWKSet(new URL(`${ISSUER}/.well-known/jwks.json`))
-// Any World assurance level is a verified human; we record which one was used on the approval row
-// ("app-default" when World omits the claim for the portal-configured check).
+// Orb-verified humans only (the face variant is also accepted if World upgrades the check).
+const ACCEPTED_ACR = ["https://world.org/oidc/acr/orb", "https://world.org/oidc/acr/orb-face"]
 
 function creds() {
   const id = process.env.WORLD_AGENTPASS_CLIENT_ID
@@ -35,8 +35,10 @@ export async function startApproval(message: string): Promise<DeviceRequest> {
     body: new URLSearchParams({
       client_id: id,
       scope: "openid",
-      // No acr_values: World applies the assurance level configured for our app in the Developer Portal
-      // (Selfie Check). Forcing orb-face made approvals fail for World IDs without an Orb face credential.
+      // Essential Orb class (no face check): World offers "Continue with World ID" (one tap in World App) next
+      // to passkey. Without it, World falls back to our portal default "Orb with face check", which hides the
+      // World ID button and needs a selfie match. The returned acr is checked below.
+      claims: JSON.stringify({ id_token: { acr: { essential: true, values: ACCEPTED_ACR } } }),
       max_age: "0",
       binding_message: message.slice(0, 120),
     }),
@@ -87,7 +89,9 @@ export async function pollApproval(deviceCode: string): Promise<PollResult> {
       audience: id,
       algorithms: ["RS256"],
     })
-    const acr = String(payload.acr ?? "app-default")
+    const acr = String(payload.acr ?? "")
+    if (!ACCEPTED_ACR.includes(acr))
+      return { state: "invalid", reason: `World ID level not accepted: ${acr || "none"}` }
     const authTime = new Date(Number(payload.auth_time ?? payload.iat ?? 0) * 1000)
     if (Date.now() - authTime.getTime() > 5 * 60_000)
       return { state: "invalid", reason: "The World ID check is too old" }
