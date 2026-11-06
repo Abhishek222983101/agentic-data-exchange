@@ -81,6 +81,15 @@ importers:
       '@worldcoin/idkit-server':
         specifier: 1.2.0
         version: 1.2.0
+      '@x402/core':
+        specifier: 2.30.0
+        version: 2.30.0
+      '@x402/hedera':
+        specifier: 2.30.0
+        version: 2.30.0(protobufjs@8.6.6)
+      '@x402/next':
+        specifier: 2.30.0
+        version: 2.30.0(ethers@6.16.0)(next@16.4.5(@babel/core@7.29.13)(@types/node@20.19.43)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(typescript@5.9.3)
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -2330,6 +2339,15 @@ packages:
 
   '@x402/hedera@2.30.0':
     resolution: {integrity: sha512-r92oEQiUjTbk0jM5oP/EhCK6XXy7s/rqvAm96Fj07pDPU98cGhhRN6UVr0YkiiTa12zTd+T0V/suGjekHSjJmQ==}
+
+  '@x402/next@2.30.0':
+    resolution: {integrity: sha512-ocXjtTr910jCOGdf5zoXljup7lKH8owWArDYaKoIv7F0ktDp7VPm1HscEACHhaZuK2UNRhufaovflNGOXIjoYg==}
+    peerDependencies:
+      '@x402/paywall': ^2.30.0
+      next: '>=16.4.1'
+    peerDependenciesMeta:
+      '@x402/paywall':
+        optional: true
 
   abitype@1.2.3:
     resolution: {integrity: sha512-Ofer5QUnuUdTFsBRwARMoWKOH1ND5ehwYhJ3OJ/BQO+StkwQjHw0XyVh4vDttzHB7QOFhPHa/o413PJ82gU/Tg==}
@@ -6272,6 +6290,18 @@ snapshots:
       - bufferutil
       - expo-crypto
       - protobufjs
+      - utf-8-validate
+
+  '@x402/next@2.30.0(ethers@6.16.0)(next@16.4.5(@babel/core@7.29.13)(@types/node@20.19.43)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(typescript@5.9.3)':
+    dependencies:
+      '@x402/core': 2.30.0
+      '@x402/extensions': 2.30.0(ethers@6.16.0)(typescript@5.9.3)
+      next: 16.4.5(@babel/core@7.29.13)(@types/node@20.19.43)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+    transitivePeerDependencies:
+      - bufferutil
+      - ethers
+      - mppx
+      - typescript
       - utf-8-validate
 
   abitype@1.2.3(typescript@5.9.3)(zod@4.6.7):
