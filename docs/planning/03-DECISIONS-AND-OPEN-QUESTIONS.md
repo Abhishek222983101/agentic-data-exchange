@@ -1,0 +1,97 @@
+# Decisions log and open questions
+
+> Living file. Update it whenever the team decides something. Status tags: **DECIDED** (team agreed), **LEANING** (recommended in sources, not confirmed by team), **OPEN** (no answer yet), **PARKED**.
+> Last updated: 3 Nov 2026 (initial pass from the three source files; research-driven updates are marked "(research)").
+
+## Decisions so far (taken from the source files)
+
+| # | Topic | Status | What was decided / recommended | Source |
+|---|---|---|---|---|
+| D1 | Main idea | LEANING | Agentic Data Exchange (human-data marketplace + settlement layer). Scored 7.5/10 overall vs Take Rate 5.5/10. | session history §8 |
+| D2 | Take Rate (Uniswap v4 hidden-fee auditor) | PARKED | Do not submit unchanged. TARE (ETHOnline 2026) overlaps heavily. Revisit only if a clear weakness in TARE turns up. | session history §7–8 |
+| D3 | Sponsor stack | LEANING | Hedera x402 + Arkiv (from scratch) + World IDKit as primaries. Chainlink CRE optional stretch. 0G = stretch alternative, Arc = pivot option. Was previously Hedera + World + Chainlink; Arkiv replaced Chainlink. | brief §7, session history §2 |
+| D4 | Architecture shape | LEANING | Hybrid. Arkiv = shared/public queryable records; private backend = app state; private object storage = raw media; settlement chain = payments. Nothing sensitive in Arkiv. | brief §4 |
+| D5 | Demo scope | LEANING | One vertical slice: 1 buyer, 1 task, 1 contributor, 1 recording, 1 AI report, 1 approved payment, 1 independently queryable Arkiv record. | brief §8 |
+| D6 | x402 vs payout | LEANING | Keep x402 paid-API calls (agent pays a service) separate from contributor reward payouts. | brief §4, §7, §9 |
+| D7 | Honesty rules | DECIDED (principle) | Never show a mock payment as real; label simulated payouts. Don't call phone video "robotics-grade". Label company-reported numbers. | brief §8–9 |
+| D8 | Cuts | LEANING | No token / NFT / tokenomics, no multi-chain, no robot telemetry, no full legal licensing automation, no high-value autonomous payouts without limits. | brief §8 |
+| D9 | Positioning | LEANING | Don't claim to invent human-data collection. Wedge = open, agent-native procurement + portable verification records + policy-controlled stablecoin settlement, interoperable with existing vendors. | brief §6 |
+
+## Open questions — need a team answer
+
+| # | Question | Why it matters | Notes |
+|---|---|---|---|
+| Q1 | Which chain settles contributor USDC payouts? Hedera (HTS USDC) or elsewhere? | Brief says "selected chain" and never picks one. Hedera keeps it to one payment stack. | Depends on testnet USDC availability (see research/02). |
+| Q2 | Private backend: Convex or PostgreSQL? | Affects speed of build and real-time UI. | Brief lists both. |
+| Q3 | AI verifier model: Gemini (video-native) or other? | Video understanding + timestamped evidence quality. | Brief names Gemini "or another multimodal model + deterministic checks". |
+| Q4 | Web only, or also an Expo / React Native contributor app? | Breadth risk. Brief marks mobile as optional. | Recommend: web (mobile-responsive capture) only. |
+| Q5 | Is World ID feasible in the hack window? | Brief says "if feasible". Needs Developer Portal app + staging simulator. | See research/02. |
+| Q6 | Chainlink CRE in or out? | Only if there is a real external-event → on-chain action. | Stretch. |
+| Q7 | Which exact Arkiv track? From-scratch vs continuity/Mirror; Swarm bonus? | Eligibility. | See research/01. |
+| Q8 | What does the "independent agent" in the demo look like? (CLI script, MCP server, separate app) | It is the brief's #1 judging advantage: an agent discovers a task on Arkiv, pays via x402, gets evidence-linked output. | Must be a different client from our own app. |
+| Q9 | What exactly is the x402-protected endpoint? (e.g. paid verification report, paid task-feed/procurement API, paid dataset manifest) | The Hedera track needs a real paid request. | Pick one that is natural in the product flow. |
+| Q10 | Team: names, roles, who owns which of the 5 workstreams? | Brief has a 5-way split (frontend, Arkiv, AI, payments, integration/demo). | Not in any source file. |
+| Q11 | Repo name, hosting (Vercel?), GitHub org | Needed before coding. | Not in sources. Personal repos use noreply git email. |
+| Q12 | What is the actual demo task? (e.g. "fold a towel", "pour water into a cup", "open a door") | Rubric + AI verification depend on it. | Pick something short, filmable on a phone, with clear checkable steps. |
+| Q13 | What was "Skarl", exactly? | The original inspiration. Session history does not define it. | See research/03. |
+
+## Research-driven updates (3 Nov 2026)
+
+| # | Update | Effect |
+|---|---|---|
+| R1 | Max **3 partner prizes** per project (ETHGlobal rule). | D3 becomes Hedera + Arkiv + World. **Chainlink CRE dropped** ($1.5k single winner; no Hedera/Arkiv support). Status: LEANING. |
+| R2 | **Skarl** = Cal Hacks 13.0 project (25 Oct 2026), won Coinbase x402 prize, already ships most of the brief (x402 USDC funding by agents, Gemini jury with timestamped evidence, finance agent that can't self-approve, MCP onboarding, Convex/Next/Expo). Thenar, WorldMod and Vangrid cover the rest. | D1/D9 need a sharper wedge. New **Q14** below. |
+| R3 | From-scratch rule: no project code, designs or assets before Thu 5 Nov 21:00 IST. | Pre-event work = research, accounts, keys, plan only. New **Q15**. |
+| R4 | Arkiv SDK 1.0 (30 Oct) + Rabdi testnet (reset twice on 30 Oct). No payload, typed columns, no NOT/!=. | Entity model rewritten in 00 §7. Need a re-seed script. |
+| R5 | Hedera x402 settles USDC natively (`0.0.429274`). Contributor payout = plain HTS transfer. Every account must associate USDC first. | Answers Q1 → **LEANING: Hedera for both flows.** |
+| R6 | World: "Best Use of IDKit" is only 2 × $1,250. **World ID Agent Pass** ($5k, agent-focused) is under the same pick. | New **Q16**. |
+| R7 | Latent Energy in the brief is the wrong entity (solar installer). Taught is pre-launch. | Fix the competitor slide. |
+| R8 | Arkiv track needs `/arkiv/schema.md`, `friction.md`, `reach.md`, `why-arkiv.md`, `how-you-use-arkiv.md`, plus writer wallets and one query in the README. Swarm bonus +$500 needs `/arkiv/swarm.md`. | Deliverables checklist. |
+| R9 | Closest ETHGlobal overlap = **WorldMod** (ETHOnline 2026). Open gap: Arkiv-queryable records, an AI agent as the buyer under a spending policy, buyer-side x402 combined with real-world capture. TARE won Uniswap + finalist, so Take Rate stays parked. | Feeds Q14 and D2. |
+
+## New open questions (from research)
+
+| # | Question | Notes |
+|---|---|---|
+| Q14 | **What is our wedge vs Skarl / Thenar / WorldMod / Vangrid?** Candidates in 00 §4: (A) open vendor-neutral record layer on Arkiv, (B) budgeted buyer procurement agent comparing x402-priced suppliers, (C) World ID Agent Pass as the human-approval layer, (D) portable contributor track record. | Main topic of the next research phase. |
+| Q15 | Does the written brief count as prior "designs" under the from-scratch rule? | Ask ETHGlobal staff; disclose in the repo either way. |
+| Q16 | World: IDKit ($2.5k shared) or Agent Pass ($5k ranked)? | Research Agent Pass docs. |
+| Q17 | Go for the Arkiv + Swarm bonus ($500)? Encrypted media on Swarm conflicts with the "private storage" rule unless references are encrypted or kept off Arkiv. | Low priority. |
+
+## Things noticed while reading the sources
+
+- The two session-history files (`.md` and the reconstructed PDF) have the same content. They were rebuilt from a ChatGPT chat, not exported word for word, so anything a past assistant claimed (e.g. TARE's features, the Bitquery numbers) is second-hand until checked.
+- "Four-day feasibility" in the scores counts from about 3 Nov. The event itself is 5–7 Nov.
+- The brief's Arkiv entity fields are illustrative. Real attribute names and types must follow the current Arkiv SDK.
+- The brief puts "settlement" in must-haves but allows a clearly labelled simulated payout as a fallback, **provided** a real x402 transaction is shown separately.
+
+## Workshop outcome and gap review (6 Nov 2026)
+
+- Showed the Arkiv team a hardcoded mockup (`workshop-mockup/`, pre-event, NOT for the repo). Arkiv contact liked the whole flow. Arkiv is a main target: integrate their stack as deeply as possible.
+- Rule: no caveats in the pitch, but every limit below must be designed around, not hidden. Log real friction in `/arkiv/friction.md` (25% of the score).
+
+### Gaps we bluffed in the mockup (G1-G10)
+| # | Gap | Demo bottleneck? | Fix |
+|---|---|---|---|
+| G1 | Hedera x402 has no official Hedera+Next example; USDC must be associated per account | YES, biggest | Smoke-test in hour 1 with `@x402/hedera` 2.30.0 |
+| G2 | Swarm needs a Bee node + postage batch; clip upload path unproven | YES | Hour-1 spike. Fallback: only preview + manifest on Swarm |
+| G3 | Arkiv write path: access key, tGLM, Rabdi resets (30 Oct x2) | Medium | Re-seed script + keep key/wallets ready |
+| G4 | Entity data cap ~128 KiB, everything public | No (design) | Only small records + hashes + public refs on Arkiv |
+| G5 | Not fully Convex-free: nullifiers + Swarm keys need a private store | No | Tiny private store (SQLite/Neon) |
+| G6 | Arkiv queries: equality/range only, no NOT/!=, limit 100, no Hamming distance | No (design) | Store dHash prefix buckets as attributes, compare in app |
+| G7 | "Trustless" overstated: anyone can write type=adx.task | No | Always filter by `$owner`; say "trust by signer" |
+| G8 | AI verifier can be fooled (re-encode, replay, phone video) | No (Q&A risk) | dHash + spoken word per claim + cooldown + human fallback |
+| G9 | World: IDKit vs Agent Pass undecided; we enforce nullifier uniqueness | No | Decide Q16 |
+| G10 | From-scratch rule vs written brief + mockup (Q15) | Risk | Ask staff; disclose in repo |
+
+### Grilling round 2 questions (answer before the build docs)
+1. One wallet per role (buyer / verifier / contributor) or one verifier wallet?
+2. Which single Arkiv read wins the demo? (Pick: outside agent finds a task and verifies a receipt with no help from our app)
+3. Does the clip itself go to Swarm in the demo, or only preview + manifest?
+4. Private store: SQLite, Neon, or Convex?
+5. Lead angle (Q14): agent as buyer + open Arkiv records?
+6. What does the x402 endpoint sell (Q9)?
+7. Demo task (Q12)?
+8. World: IDKit or Agent Pass (Q16)?
+9. Team roles for the 4 people (Q10)?
+10. Repo name, host, GitHub org (Q11)?
