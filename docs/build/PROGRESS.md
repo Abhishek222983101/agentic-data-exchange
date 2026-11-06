@@ -13,8 +13,8 @@
 |---|---|---|
 | P0 Foundation | Monorepo, env checks, private database, design system + app shell | ✅ done |
 | P1 Arkiv core | Public data layer: 8 record types, safety guard, write queue, seed task, live task board + explorer | ✅ done |
-| P-UI | Every screen in final design, clickable on a phone | ⏳ next |
-| P2 Identity | Embedded wallet (passkey), World ID claim, one-human-per-slot | ⬜ |
+| P-UI | Every screen in final design, clickable on a phone | ✅ done |
+| P2 Identity | Embedded wallet (passkey), World ID claim, one-human-per-slot | ⏳ next |
 | P3 Capture & upload | In-browser camera recorder, worker upload server on Railway | ⬜ |
 
 **Shipping rule:** nothing reaches `main` unless `pnpm verify` passes (typecheck + lint + unit tests + production build). Each phase ends with one push to `main`, which Vercel deploys.
@@ -133,6 +133,25 @@ Every task, verdict, receipt and licence is a public record on **Arkiv**, so any
 **Known limits / next**
 - Each Arkiv write takes ~6.5 s (it waits for confirmation). The claim screen will show progress so this feels intentional.
 - The live URL needs the server env vars on Vercel. **One-time step for Abhishek:** run `bash scripts/vercel-env.sh` (copies names from `.env` to Vercel without printing values). Until then the live board says "Syncing with Arkiv…" rather than breaking.
+
+### P-UI Every screen ✅ (Fri 6 Nov, 16:15–16:45 IST)
+
+**Goal:** the whole app clickable on a phone in its final look, so later phases only swap data sources.
+
+| Screen | Route | Data today |
+|---|---|---|
+| Landing | `/` | **Real**: live task card + totals counted on Arkiv |
+| Task board / detail | `/tasks`, `/tasks/[key]` | **Real** (Arkiv) |
+| Record (no claim yet) | `/record` | Real empty state |
+| Live status + verdict | `/submissions/[key]` | Sample data (P4 makes it live) |
+| Me: earnings + licences | `/me` | Sample data (P2 wallet, P7 licences) |
+| Buyer console | `/console` | Sample data (P6) |
+| Approve a payment | `/approve/[id]` | Sample data (P6, World Agent Pass) |
+| Explorer | `/explorer` | **Real** (Arkiv) |
+| Proofs | `/proofs` | **Real** links from PROOFS.md |
+
+Every sample region carries a dashed **"Sample data"** badge, so nothing pretends to be real.
+Shared pieces: `PipelineSteps` (live check list, screen-reader announced), `VerdictCard` (each step with the second it happened and an evidence line), `ProofLink` (every on-chain thing is clickable), `SlotRail`, `Countdown`.
 
 ---
 

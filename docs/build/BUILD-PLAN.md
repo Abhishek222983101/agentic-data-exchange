@@ -32,6 +32,7 @@ Every phase ends with `pnpm verify` (typecheck + lint + unit tests + production 
 | P1.2 Write guard | 13 guard unit tests; 64-hex title refused live | Passed |
 | P1.3 Signer queue | 10 parallel creates on one signer, no nonce errors | Passed (10/10, 65 s) |
 | P1.4 Queries + seed | `pnpm seed:arkiv` prints keys + links | Passed (ARK-03) |
+| P-UI All screens | every route 200, sample regions badged, real data where it exists | Passed (local prod build, screenshots) |
 | P1.5 First reads | `/tasks` shows the seeded task; `/explorer` returns the same key | Passed locally; live URL needs Vercel env (`scripts/vercel-env.sh`) |
 
 ## Acceptance checklist

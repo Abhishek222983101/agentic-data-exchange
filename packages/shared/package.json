@@ -11,7 +11,8 @@
     "./challenge": "./src/challenge.ts",
     "./upload-token": "./src/upload-token.ts",
     "./rubric": "./src/rubric.ts",
-    "./swarm": "./src/swarm.ts"
+    "./swarm": "./src/swarm.ts",
+    "./events": "./src/events.ts"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",
