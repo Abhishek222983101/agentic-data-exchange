@@ -1,0 +1,13 @@
+{
+  "name": "adx",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.0.0",
+  "scripts": {
+    "arkiv:smoke": "node --env-file=.env --experimental-strip-types scripts/arkiv-smoke.ts"
+  },
+  "dependencies": {
+    "@arkiv-network/sdk": "1.0.1",
+    "viem": "2.57.16"
+  }
+}
