@@ -2,7 +2,15 @@
 //   1. moves Sepolia ETH from the donor wallet to our Swarm funding wallet
 //   2. swaps Sepolia ETH -> sBZZ on Uniswap v3 (WETH/sBZZ 0.3% pool) from the funding wallet
 // Run: pnpm swarm:fund   [SWAP_ETH=0.06] [KEEP_DONOR_ETH=0.005]
-import { createPublicClient, createWalletClient, formatEther, formatUnits, http, parseAbi, parseEther } from "viem"
+import {
+  createPublicClient,
+  createWalletClient,
+  formatEther,
+  formatUnits,
+  http,
+  parseAbi,
+  parseEther,
+} from "viem"
 import { privateKeyToAccount } from "viem/accounts"
 import { sepolia } from "viem/chains"
 
@@ -29,7 +37,12 @@ if (donorBal > keep + parseEther("0.001")) {
   await pub.waitForTransactionReceipt({ hash })
   console.log(`moved ${formatEther(value)} SepETH donor -> funder · https://sepolia.etherscan.io/tx/${hash}`)
 }
-console.log("funder", funder.address, formatEther(await pub.getBalance({ address: funder.address })), "SepETH")
+console.log(
+  "funder",
+  funder.address,
+  formatEther(await pub.getBalance({ address: funder.address })),
+  "SepETH",
+)
 
 // 2. swap ETH -> sBZZ (router wraps ETH sent as value)
 const amountIn = parseEther(process.env.SWAP_ETH ?? "0.06")
@@ -67,6 +80,17 @@ const hash = await fw.writeContract({
   value: amountIn,
 })
 await pub.waitForTransactionReceipt({ hash })
-const sbzz = await pub.readContract({ address: SBZZ, abi: erc20, functionName: "balanceOf", args: [funder.address] })
+const sbzz = await pub.readContract({
+  address: SBZZ,
+  abi: erc20,
+  functionName: "balanceOf",
+  args: [funder.address],
+})
 console.log(`swapped · https://sepolia.etherscan.io/tx/${hash}`)
-console.log("funder now:", formatEther(await pub.getBalance({ address: funder.address })), "SepETH,", formatUnits(sbzz, 16), "sBZZ")
+console.log(
+  "funder now:",
+  formatEther(await pub.getBalance({ address: funder.address })),
+  "SepETH,",
+  formatUnits(sbzz, 16),
+  "sBZZ",
+)

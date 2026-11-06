@@ -19,6 +19,16 @@ Deadline: **Sat 7 Nov 09:00 IST** (no late entries). Feature freeze Fri 23:00. V
 | 8 | Sponsor docs: `/arkiv/*.md`, README (tx IDs, wallets, query), World debrief, AI_USAGE, screenshots | Sat 01:00–04:00 | Every checklist row below ticked |
 | 9 | Record video, submit | Sat 04:00–07:00 | Submitted with 2 h margin |
 
+## Phase gates (P0–P3)
+Every phase ends with `pnpm verify` (typecheck + lint + unit tests + production build) green, a security pass, then one push to `main`.
+
+| Sub-phase | Acceptance (actually run) | Status |
+|---|---|---|
+| P0.1 Workspace + tooling | `pnpm typecheck` + `pnpm lint` pass across workspace | Passed (6 Nov 15:40) |
+| P0.2 Env validation + doctor | `pnpm run doctor` green table | Passed: 14/14 live checks |
+| P0.3 Database | 9 tables in Neon | Passed (`drizzle-kit push`) |
+| P0.4 Tokens + shell | shell in light + dark at 393 px, all nav routes 200 | Passed (screenshots) |
+
 ## Acceptance checklist
 Status: **Not run** · **Passed** · **Failed**. Only mark Passed after actually running it.
 

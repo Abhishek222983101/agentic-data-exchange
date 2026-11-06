@@ -53,6 +53,10 @@ const rows = await pub
   .ownedBy(account.address)
   .limit(10)
   .fetch()
-console.log("query hits", rows.entities.length, rows.entities.map((r) => r.$key))
+console.log(
+  "query hits",
+  rows.entities.length,
+  rows.entities.map((r) => r.$key),
+)
 console.log(`explorer: https://rabdi.explorer.arkiv.network/tx/${txHash}`)
 console.log(`total ${Date.now() - t0} ms`)

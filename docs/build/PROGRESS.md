@@ -1,0 +1,101 @@
+# Paradigm: build progress (live)
+
+> A plain-language record of what is being built, why, and where we are. It's updated after every sub-phase, so anyone (teammate, manager, judge) can follow along without reading code.
+> Technical source of truth: [`SYSTEM-ARCHITECTURE.md`](SYSTEM-ARCHITECTURE.md). Live checklist: [`BUILD-PLAN.md`](BUILD-PLAN.md).
+
+**Live app:** https://adx-paradigm.vercel.app · **Repo:** https://github.com/Abhishek222983101/agentic-data-exchange
+
+---
+
+## Where we are right now
+
+| Phase | What it gives us | Status |
+|---|---|---|
+| P0 Foundation | Monorepo, env checks, private database, design system + app shell | ✅ done |
+| P1 Arkiv core | Public data layer: 8 record types, safety guard, write queue, seed task, live task board + explorer | ⏳ next |
+| P-UI | Every screen in final design, clickable on a phone | ⬜ |
+| P2 Identity | Embedded wallet (passkey), World ID claim, one-human-per-slot | ⬜ |
+| P3 Capture & upload | In-browser camera recorder, worker upload server on Railway | ⬜ |
+
+**Shipping rule:** nothing reaches `main` unless `pnpm verify` passes (typecheck + lint + unit tests + production build). Each phase ends with one push to `main`, which Vercel deploys.
+
+---
+
+## The idea in one minute
+
+Robot companies train their robots on videos of humans doing tasks. They need **many short clips from many different people** of exactly the tasks their robot fails at (for example "fold a crumpled towel"). Today they buy bulk footage from closed vendors and can't check who filmed it, whether it was sold twice, or whether the person still consents.
+
+**Paradigm** is a marketplace where:
+1. The robot team's **AI agent** posts a paid task ("fold a towel, 3 USDC, 3 slots").
+2. A person proves they are a **unique human with World ID** and claims one slot (one person per slot, so the dataset is genuinely diverse).
+3. They **film 15–30 s on their phone** in the browser, including a random spoken word and a finger count, so the clip is live and not a replay.
+4. An **AI verifier (Gemini)** watches the clip and returns timestamped evidence. Plain code, not the AI, decides accept or reject.
+5. The clip is **encrypted and stored on Swarm** (decentralised storage).
+6. The buyer's agent **pays automatically in USDC on Hedera** using the x402 "pay per request" standard. Above a spending threshold, a human must approve on their phone with **World Agent Pass**.
+7. The contributor receives a **licence they own and can withdraw**.
+
+Every task, verdict, receipt and licence is a public record on **Arkiv**, so anyone can audit the marketplace without asking us.
+
+### Sponsors and what each one does for us
+| Sponsor | Role in Paradigm | Why it matters |
+|---|---|---|
+| **Arkiv** | Public database of every task, claim, verdict, receipt, licence | Open, queryable, expiring records: data that's checkable by anyone |
+| **Swarm** (Arkiv bonus) | Stores the encrypted video clips | Private until paid; our own node and storage batch |
+| **Hedera** | USDC payments via x402 | Machine-to-machine payments in ~2 s, no checkout |
+| **World** | IDKit (one human per slot) + Agent Pass (human approves big payments) | Stops fake accounts; keeps humans in control of AI spending |
+
+---
+
+## Glossary (plain words)
+- **Entity (Arkiv):** one public record, like a row in a public spreadsheet, with an owner and an expiry date.
+- **Owner-filtered query:** we only trust records written by *our* wallets, so nobody can inject fake tasks.
+- **Wallet / signer:** a cryptographic key that signs writes. We use a separate one per job (web, worker, verifier, buyer) so a leak in one place can't impersonate another.
+- **Nullifier (World ID):** an anonymous number that's the same every time the same human claims the same task. It lets us block duplicates without knowing who the person is. Kept private in our database, never public.
+- **x402:** an HTTP standard. The server answers "402 Payment Required", the agent pays, and the server releases the data.
+- **Settlement:** the payment actually landing on Hedera. We release keys and write receipts only after it.
+- **Swarm batch:** prepaid storage capacity on Swarm. Ours is `c0cc5436…2665`.
+- **Neon:** our private Postgres database, for things that must not be public.
+
+---
+
+## Phase log
+
+### P0 Foundation ✅ (Fri 6 Nov, 15:15–15:45 IST)
+
+**Goal:** a clean base every later phase plugs into.
+
+**What was built**
+| Piece | File(s) | What it does, in plain words |
+|---|---|---|
+| Monorepo tooling | `package.json`, `tsconfig.base.json`, `biome.json`, `vitest.config.ts` | One repo, several apps sharing code. Strict TypeScript, one linter/formatter (Biome), one test runner (Vitest). |
+| Shared package | `packages/shared/` | Code used by the website, the worker and the agent: Arkiv schemas, safety guard, crypto, env checks. |
+| Env validation | `packages/shared/src/env.ts` | Each service lists the settings it needs. A missing setting makes it fail at start-up with the *name* (never the value). |
+| Health check | `scripts/doctor.ts` → `pnpm run doctor` | One command checks every outside service and prints a ✓/✗ table. |
+| Private database | `packages/db/src/schema.ts` | 9 tables in Neon: private claim records (World ID nullifiers), upload tokens (hashed), clip encryption keys, payments, approvals, a live event log, rate limits. |
+| Design system | `apps/web/src/app/globals.css`, `components/ui/*` | Grey/black base, light + dark themes, one accent colour (Arkiv orange `#FE7446`) for main actions and on-chain moments. shadcn/ui components on Radix. |
+| App shell | `apps/web/src/app/layout.tsx`, `components/shell/*` | Header with logo and theme toggle; a phone-style bottom bar (Tasks · Record · Me · Console); PWA manifest, so it can be added to the home screen. |
+| Security headers | `apps/web/next.config.ts` | Camera/mic allowed only for our own site, no framing, strict HTTPS, no MIME sniffing. |
+
+**Proof it works**
+- `pnpm run doctor`: all 14 live checks green (Arkiv RPC + 4 role wallets funded, Neon 9 tables, Hedera operator 913 HBAR, buyer 19.99 USDC, x402 facilitator supports `hedera:testnet`, World Agent Pass discovery, Gemini 3 Flash available, Anthropic reachable, Swarm gateway healthy).
+- `pnpm verify`: typecheck, lint, 20 unit tests and production build all pass.
+
+**Security pass (P0)**
+- `.env` and `.env.local` are git-ignored; the repo only has `.env.example` (names only).
+- Error messages from env checks and the Arkiv guard never include values.
+- Each role has its own Arkiv wallet (`web`, `worker`, `verifier`, `buyer`). Public addresses are in `packages/shared/src/arkiv/wallets.ts`; keys stay in `.env`.
+- Supply chain: all versions pinned. The new `cn` dependency was checked (maintained by shadcn).
+
+**Decisions made in P0**
+- Arkiv text fields are capped at **128 bytes** (found in the SDK source), so the full task rubric is stored as a `bytes` field on the task entity *and* on Swarm. The task board then never depends on a gateway being up.
+- Upload tokens are stored as **hashes** only: a database leak can't be replayed as uploads.
+
+---
+
+## How to check things yourself
+```bash
+pnpm run doctor     # every outside service ✓/✗
+pnpm test           # unit tests (guard, tokens, crypto, challenge, rubric)
+pnpm verify         # the full gate that runs before every push to main
+pnpm dev            # run the website locally on http://localhost:3000
+```

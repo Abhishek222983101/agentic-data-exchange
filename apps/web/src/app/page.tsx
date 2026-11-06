@@ -1,10 +1,18 @@
+import Link from "next/link"
+import { Button } from "@/components/ui/button"
+
 export default function Home() {
   return (
-    <main className="min-h-dvh grid place-items-center p-8 font-mono">
-      <div className="max-w-md text-center space-y-3">
-        <h1 className="text-3xl font-bold">[ ADX ]</h1>
-        <p className="text-sm opacity-70">Agentic Data Exchange · ETHGlobal Mumbai 2026 · build in progress</p>
-      </div>
-    </main>
+    <section className="mx-auto max-w-[1120px] px-5 pt-16">
+      <h1 className="max-w-[16ch] text-[44px] leading-[1.02] font-semibold tracking-[-0.035em] text-balance">
+        Robots learn from your hands.
+      </h1>
+      <p className="mt-4 max-w-[52ch] text-muted-foreground text-pretty">
+        Film a short task on your phone, get paid in USDC, and keep the licence to your clip.
+      </p>
+      <Button asChild variant="signal" size="xl" className="mt-8">
+        <Link href="/tasks">See open tasks</Link>
+      </Button>
+    </section>
   )
 }

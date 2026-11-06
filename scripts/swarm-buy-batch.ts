@@ -25,15 +25,25 @@ const ps = parseAbi([
   "event BatchCreated(bytes32 indexed batchId,uint256 totalAmount,uint256 normalisedBalance,address owner,uint8 depth,uint8 bucketDepth,bool immutableFlag)",
 ])
 
-const bal = await pub.readContract({ address: SBZZ, abi: erc20, functionName: "balanceOf", args: [acct.address] })
+const bal = await pub.readContract({
+  address: SBZZ,
+  abi: erc20,
+  functionName: "balanceOf",
+  args: [acct.address],
+})
 const price = await pub.readContract({ address: POSTAGE, abi: ps, functionName: "lastPrice" })
 const chunks = 1n << BigInt(DEPTH)
 const perChunk = bal / chunks
-const days = Number(perChunk / price) * BLOCK_SECONDS / 86400
+const days = (Number(perChunk / price) * BLOCK_SECONDS) / 86400
 console.log(`owner ${acct.address} · ${formatUnits(bal, 16)} sBZZ · price ${price}/chunk/block`)
 console.log(`depth ${DEPTH} → ${perChunk} PLUR/chunk ≈ ${days.toFixed(2)} days`)
 
-const approve = await w.writeContract({ address: SBZZ, abi: erc20, functionName: "approve", args: [POSTAGE, perChunk * chunks] })
+const approve = await w.writeContract({
+  address: SBZZ,
+  abi: erc20,
+  functionName: "approve",
+  args: [POSTAGE, perChunk * chunks],
+})
 await pub.waitForTransactionReceipt({ hash: approve })
 const nonce = keccak256(toHex(`adx-${Date.now()}`))
 const hash = await w.writeContract({

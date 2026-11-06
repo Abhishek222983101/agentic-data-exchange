@@ -4,15 +4,28 @@
   "type": "module",
   "packageManager": "pnpm@10.0.0",
   "scripts": {
-    "arkiv:smoke": "node --env-file=.env --experimental-strip-types scripts/arkiv-smoke.ts",
-    "hedera:setup": "node --env-file=.env --experimental-strip-types scripts/hedera-setup.ts",
-    "x402:smoke": "node --env-file=.env --experimental-strip-types scripts/x402-smoke.ts",
-    "swarm:smoke": "node --env-file=.env --experimental-strip-types scripts/swarm-smoke.ts",
-    "swarm:fund": "node --env-file=.env --experimental-strip-types scripts/swarm-fund.ts",
-    "swarm:fund-node": "node --env-file=.env --experimental-strip-types scripts/swarm-fund-node.ts",
-    "swarm:buy-batch": "node --env-file=.env --experimental-strip-types scripts/swarm-buy-batch.ts"
+    "arkiv:smoke": "tsx --env-file=.env scripts/arkiv-smoke.ts",
+    "hedera:setup": "tsx --env-file=.env scripts/hedera-setup.ts",
+    "x402:smoke": "tsx --env-file=.env scripts/x402-smoke.ts",
+    "swarm:smoke": "tsx --env-file=.env scripts/swarm-smoke.ts",
+    "swarm:fund": "tsx --env-file=.env scripts/swarm-fund.ts",
+    "swarm:fund-node": "tsx --env-file=.env scripts/swarm-fund-node.ts",
+    "swarm:buy-batch": "tsx --env-file=.env scripts/swarm-buy-batch.ts",
+    "dev": "pnpm --filter @adx/web dev",
+    "build": "pnpm --filter @adx/web build",
+    "lint": "biome check .",
+    "format": "biome check --write .",
+    "typecheck": "tsc -p tsconfig.json && pnpm -r typecheck",
+    "test": "vitest run",
+    "doctor": "tsx --env-file=.env scripts/doctor.ts",
+    "db:push": "pnpm --filter @adx/db exec drizzle-kit push",
+    "arkiv:wallets": "tsx --env-file=.env scripts/arkiv-wallets.ts",
+    "seed:arkiv": "tsx --env-file=.env scripts/seed-arkiv.ts",
+    "verify": "pnpm typecheck && pnpm lint && pnpm test && pnpm build"
   },
   "dependencies": {
+    "@adx/db": "workspace:^",
+    "@adx/shared": "workspace:^",
     "@arkiv-network/sdk": "1.0.1",
     "@hiero-ledger/sdk": "2.90.1",
     "@x402/core": "2.30.0",
@@ -23,6 +36,12 @@
     "viem": "2.57.16"
   },
   "devDependencies": {
-    "ethers": "6"
+    "@biomejs/biome": "2.6.5",
+    "@types/express": "5",
+    "@types/node": "22",
+    "ethers": "6",
+    "tsx": "4.23.15",
+    "typescript": "5.9.3",
+    "vitest": "5.1.0"
   }
 }

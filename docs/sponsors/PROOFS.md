@@ -8,6 +8,7 @@ Screenshots are captured clean (no keys or secrets visible) into `docs/proofs/`,
 | ID | When (IST) | What | Proof |
 |---|---|---|---|
 | ARK-01 | 06 Nov 07:20 | First entity write, read-back and owner-filtered query (SDK 1.0.1) | [tx 0x159e…25b3](https://rabdi.explorer.arkiv.network/tx/0x159e18177011c03c1f0d8d5c97283ff4086770c09679154afa322f7b97ca25b3) · entity `0xdebe725978225037887ebcd22b24b69fdddddbd6e90e90ccce86dd78190950c0` · `scripts/arkiv-smoke.ts` |
+| ARK-02 | 06 Nov 15:20 | One Arkiv signer per role funded from the team wallet (web `0x2dEc…D98C`, worker `0xCDFa…2A51`, verifier `0x0C73…F421`, buyer `0x0F00…Dcc6`) | [web](https://rabdi.explorer.arkiv.network/tx/0x7e9481492c44abc7336316960ab593264351c6def5a78b054611e35085013c49) · [worker](https://rabdi.explorer.arkiv.network/tx/0x692273829ebaf01c89b4bf5eee67842bc0559d3adff7e39f07156772366700d0) · [verifier](https://rabdi.explorer.arkiv.network/tx/0xf51fc73a501633d1837643bf2c128acd39427f6aff1bf081d94b5712fa0ba573) · [buyer](https://rabdi.explorer.arkiv.network/tx/0xf69fc84c39b8646e1e13ef6a638eaa175935c2dd2a32a5c888adb357d3f0c8d5) · `scripts/arkiv-wallets.ts` |
 
 ## Hedera (testnet)
 | ID | When (IST) | What | Proof |
