@@ -12,3 +12,4 @@ coverage/
 *.kate-swp
 *.swp
 .~lock.*#
+.vercel
