@@ -17,32 +17,44 @@ function schemaName(schema: AnySchema): string {
 }
 
 /**
- * Create an entity as `role`. Before sending we predict the key (with our own salt); if the RPC times
- * out after the tx was accepted, reconciliation finds the entity at the predicted key instead of
- * creating a duplicate.
+ * Start creating an entity as `role` and get its key *before* the transaction confirms.
+ * The key is predicted inside the signer's queue (so no other create from this wallet can shift the nonce)
+ * and the same salt is reused on every retry, so the key never changes: a failed tx didn't consume the nonce,
+ * and a timed-out-but-mined tx is found at that key by reconciliation instead of being created twice.
  */
-export async function safeCreate<S extends AnySchema>(
+export function startCreate<S extends AnySchema>(
   role: Role,
   schema: S,
   values: CreateEntityValues<S>,
   expiration: Expiry,
-): Promise<WriteResult> {
+): { key: Promise<Hex>; done: Promise<WriteResult> } {
   assertPublicSafe(schemaName(schema), values as Record<string, unknown>)
   const wallet = walletFor(role)
   const pub = arkivPublic()
-  return enqueue(wallet.account.address, async () => {
+  let resolveKey!: (k: Hex) => void
+  let rejectKey!: (e: unknown) => void
+  const key = new Promise<Hex>((res, rej) => {
+    resolveKey = res
+    rejectKey = rej
+  })
+  const done = enqueue(wallet.account.address, async () => {
     const t0 = Date.now()
-    let predicted: { key: Hex; salt: bigint } | undefined
+    let predicted: { key: Hex; salt: bigint }
+    try {
+      const [p] = await withRetry(() => pub.predictEntityKeys({ owner: wallet.account.address, count: 1 }))
+      predicted = p as { key: Hex; salt: bigint }
+      resolveKey(predicted.key)
+    } catch (e) {
+      rejectKey(e)
+      throw e
+    }
     return withRetry(
       async () => {
-        const [p] = await pub.predictEntityKeys({ owner: wallet.account.address, count: 1 })
-        predicted = p as { key: Hex; salt: bigint }
         const res = await wallet.createEntity(schema, values, { expiration, salt: predicted.salt })
         return { entityKey: res.entityKey, txHash: res.txHash, ms: Date.now() - t0 }
       },
       {
         reconcile: async () => {
-          if (!predicted) return undefined
           await new Promise((r) => setTimeout(r, 2500))
           const found = await pub.getEntity(predicted.key).catch(() => null)
           return found ? { entityKey: predicted.key, txHash: "0x" as Hex, ms: Date.now() - t0 } : undefined
@@ -50,6 +62,18 @@ export async function safeCreate<S extends AnySchema>(
       },
     )
   })
+  done.catch(() => undefined) // callers that only await `key` must not leave an unhandled rejection
+  return { key, done }
+}
+
+/** Create an entity and wait for confirmation (guard → per-signer queue → retry with reconciliation). */
+export async function safeCreate<S extends AnySchema>(
+  role: Role,
+  schema: S,
+  values: CreateEntityValues<S>,
+  expiration: Expiry,
+): Promise<WriteResult> {
+  return startCreate(role, schema, values, expiration).done
 }
 
 export async function safePatch<S extends AnySchema>(

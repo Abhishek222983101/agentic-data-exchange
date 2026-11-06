@@ -109,6 +109,66 @@ ok(
   "start over: same human gets a fresh claim, still one slot",
   !redo.res.resumed && redo.res.claimKey !== first.res.claimKey && redo.res.slot === 1,
 )
+// Restart pass: after a submitted clip, the 409 carries a one-time pass; Start over needs no second World proof.
+await db()
+  .update(claimsPrivate)
+  .set({ status: "submitted" })
+  .where(eq(claimsPrivate.claimKey, redo.res.claimKey))
+let pass: string | undefined
+try {
+  await attempt(A2, "A")
+} catch (e) {
+  pass = (e as ApiFail).details?.restartToken as string | undefined
+}
+ok("already submitted → 409 with a one-time restart pass", typeof pass === "string" && pass.length > 40)
+const passMsg = (acct: ReturnType<typeof privateKeyToAccount>) =>
+  claimMessage(taskKey, acct.address, `restart:${(pass as string).slice(-24)}`)
+const noWorld = {
+  verify: async () => {
+    throw new Error("World must not be called")
+  },
+}
+const viaPass = await claimSlot(
+  {
+    taskKey,
+    wallet: A2.address,
+    signature: await A2.signMessage({ message: passMsg(A2) }),
+    restartToken: pass,
+  },
+  noWorld,
+)
+ok(
+  "start over with the pass: fresh claim, no second World ID proof",
+  !viaPass.res.resumed && viaPass.res.claimKey !== redo.res.claimKey,
+)
+ok(
+  "the same pass can't be used twice",
+  (await code(
+    claimSlot(
+      {
+        taskKey,
+        wallet: A2.address,
+        signature: await A2.signMessage({ message: passMsg(A2) }),
+        restartToken: pass,
+      },
+      noWorld,
+    ),
+  )) === "409 restart_used",
+)
+ok(
+  "the pass is useless to another wallet",
+  (await code(
+    claimSlot(
+      {
+        taskKey,
+        wallet: C.address,
+        signature: await C.signMessage({ message: passMsg(C) }),
+        restartToken: pass,
+      },
+      noWorld,
+    ),
+  )) === "401 restart_expired",
+)
 const second = await attempt(B, "B")
 ok("second human gets slot 2", second.res.slot === 2)
 ok("third human → 409 task_full", (await code(attempt(C, "C"))) === "409 task_full")
@@ -159,9 +219,9 @@ ok(
 // Neon holds the private link; Arkiv never sees the nullifier or wallet.
 const rows = await db().select().from(claimsPrivate).where(eq(claimsPrivate.taskKey, taskKey))
 ok(
-  "Neon keeps 2 live claims + 1 released (history kept on start over)",
+  "Neon keeps 2 live claims + 2 released (history kept on every start over)",
   rows.filter((r) => r.status !== "released").length === 2 &&
-    rows.filter((r) => r.status === "released").length === 1,
+    rows.filter((r) => r.status === "released").length === 2,
 )
 await db().delete(claimsPrivate).where(eq(claimsPrivate.taskKey, taskKey))
 

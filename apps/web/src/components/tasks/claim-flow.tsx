@@ -33,9 +33,18 @@ type Phase =
     }
   | { kind: "saving" }
   | { kind: "done"; claim: ClaimResponse }
-  | { kind: "blocked"; code: string; message: string; submissionId: string | null; canRestart: boolean }
+  | {
+      kind: "blocked"
+      code: string
+      message: string
+      submissionId: string | null
+      canRestart: boolean
+      restartToken?: string
+    }
 
-type ClaimError = ApiError & { error: { details?: { submissionId?: string | null; canRestart?: boolean } } }
+type ClaimError = ApiError & {
+  error: { details?: { submissionId?: string | null; canRestart?: boolean; restartToken?: string } }
+}
 
 // Which World ID credential we ask for. "device" (default) = any verified World ID (Orb or device),
 // works for everyone today. "human" = World ID 4.0 proof of human (Orb). "selfie" = Selfie Check, which
@@ -125,6 +134,7 @@ export function ClaimFlow({ taskKey, title }: { taskKey: `0x${string}`; title: s
           message,
           submissionId: d?.submissionId ?? null,
           canRestart: Boolean(d?.canRestart),
+          restartToken: d?.restartToken,
         })
       } else {
         setPhase({ kind: "idle" })
@@ -139,6 +149,38 @@ export function ClaimFlow({ taskKey, title }: { taskKey: `0x${string}`; title: s
     setPhase({ kind: "done", claim: j })
     if (j.resumed) toast("You already hold a slot on this task. Here's your challenge again.")
     else if (restartRef.current) toast.success("Started over with a fresh slot and a new challenge.")
+  }
+
+  // Start over without a second World ID check: the server issued a one-time pass moments ago, right after
+  // this person proved their World ID. The wallet signs the request; the pass expires in 2 minutes.
+  async function startOverWithPass(restartToken: string) {
+    try {
+      setPhase({ kind: "saving" })
+      const account = await ensureAccount()
+      const signature = await account.signMessage({
+        message: claimMessage(taskKey, account.address, `restart:${restartToken.slice(-24)}`),
+      })
+      const r = await fetch("/api/claims", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ taskKey, wallet: account.address, signature, restartToken }),
+      })
+      const j = (await r.json()) as ClaimResponse | ClaimError
+      if (!r.ok || "error" in j) {
+        // Pass expired or already used: fall back to a normal World ID claim.
+        if ("error" in j && (j.error.code === "restart_expired" || j.error.code === "restart_used"))
+          return start(true)
+        throw new Error("error" in j ? j.error.message : "Couldn't start over")
+      }
+      for (const old of readClaims().filter((c) => c.taskKey.toLowerCase() === taskKey.toLowerCase()))
+        dropClaim(old.claimKey)
+      saveClaim({ ...j, title, savedAt: Date.now() })
+      setPhase({ kind: "done", claim: j })
+      toast.success("Started over with a fresh slot and a new challenge.")
+    } catch (e) {
+      setPhase({ kind: "idle" })
+      toast.error((e as Error).message || "Couldn't start over")
+    }
   }
 
   if (phase.kind === "blocked") {
@@ -162,9 +204,14 @@ export function ClaimFlow({ taskKey, title }: { taskKey: `0x${string}`; title: s
             </Button>
           ) : null}
           {phase.canRestart ? (
-            <Button variant="signal" size="xl" className="w-full" onClick={() => start(true)}>
+            <Button
+              variant="signal"
+              size="xl"
+              className="w-full"
+              onClick={() => (phase.restartToken ? startOverWithPass(phase.restartToken) : start(true))}
+            >
               <RotateCcw />
-              Start over with World ID
+              Start over
             </Button>
           ) : null}
         </div>

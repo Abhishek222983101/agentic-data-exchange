@@ -6,7 +6,7 @@
 import { readFile, rm } from "node:fs/promises"
 import type { dbPool } from "@adx/db"
 import { claimsPrivate, clipKeys, eq, events, humans, jobs, sql } from "@adx/db"
-import { S, safeCreate, submissionsByBucket, taskByKey } from "@adx/shared/arkiv"
+import { S, safeCreate, startCreate, submissionsByBucket, taskByKey } from "@adx/shared/arkiv"
 import { decodeChallenge } from "@adx/shared/challenge"
 import { encrypt, newClipKey, sha256Hex } from "@adx/shared/crypto"
 import type { PipelineStepId, VerdictSummary } from "@adx/shared/events"
@@ -166,9 +166,10 @@ export async function processJob(db: DB, env: PipelineEnv, job: Job): Promise<st
       (ref) => ({ swarmRef: ref }),
     )
 
-    // 8. Publish to Arkiv: submission (worker) then its verdict (verifier), each through the guarded queue.
+    // 8. Publish to Arkiv in parallel: the submission key is predicted, so the verifier's verdict can reference
+    //    it while the worker's transaction is still confirming (two wallets, two queues, ~7 s instead of ~14 s).
     const t0 = Date.now()
-    const sub = await safeCreate(
+    const subWrite = startCreate(
       "worker",
       S.Submission,
       {
@@ -185,16 +186,23 @@ export async function processJob(db: DB, env: PipelineEnv, job: Job): Promise<st
       },
       ExpirationTime.fromDays(30),
     )
+    const subKey = await subWrite.key
+    // Sellable as soon as the key is known: the agent can start paying while Arkiv confirms.
+    await db
+      .insert(clipKeys)
+      .values({ submissionKey: subKey, aesKey: key, swarmRef, cipherSha256 })
+      .onConflictDoNothing()
+    await db.update(jobs).set({ submissionKey: subKey, updatedAt: new Date() }).where(eq(jobs.id, job.id))
     const evidence = JSON.stringify({
       steps: summary.steps,
       liveness: summary.liveness,
       reason: summary.reason,
     })
-    const ver = await safeCreate(
+    const verWrite = safeCreate(
       "verifier",
       S.Verification,
       {
-        submission: keyV(sub.entityKey),
+        submission: keyV(subKey),
         task: keyV(job.taskKey as Hex),
         verdict: str(summary.verdict),
         score: u64(summary.score),
@@ -205,14 +213,7 @@ export async function processJob(db: DB, env: PipelineEnv, job: Job): Promise<st
       },
       ExpirationTime.fromDays(180),
     )
-    await db
-      .insert(clipKeys)
-      .values({ submissionKey: sub.entityKey, aesKey: key, swarmRef, cipherSha256 })
-      .onConflictDoNothing()
-    await db
-      .update(jobs)
-      .set({ submissionKey: sub.entityKey, updatedAt: new Date() })
-      .where(eq(jobs.id, job.id))
+    const [sub, ver] = await Promise.all([subWrite.done, verWrite])
     await event("publish", true, Date.now() - t0, {
       submissionKey: sub.entityKey,
       verificationKey: ver.entityKey,

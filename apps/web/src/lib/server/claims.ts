@@ -6,7 +6,7 @@
 import "server-only"
 import { randomBytes } from "node:crypto"
 import { claimsPrivate, contributors, db, desc, eq, humans, jobs, sql, uploadTokens } from "@adx/db"
-import { S, safeCreate, taskByKey } from "@adx/shared/arkiv"
+import { S, startCreate, taskByKey } from "@adx/shared/arkiv"
 import { decodeChallenge, encodeChallenge, newChallenge } from "@adx/shared/challenge"
 import { type ClaimResponse, claimMessage, claimSignal } from "@adx/shared/claim"
 import { issueUploadToken } from "@adx/shared/upload-token"
@@ -15,6 +15,7 @@ import { ExpirationTime } from "@arkiv-network/sdk"
 import { key as keyV, str, u64 } from "@arkiv-network/sdk/schema"
 import { type Hex, hashMessage, isAddressEqual, recoverMessageAddress, recoverPublicKey } from "viem"
 import { fail } from "./api"
+import { issueRestartToken, verifyRestartToken } from "./restart-token"
 import { type IdkitResult, verifyClaimProof } from "./world"
 
 const CLAIM_TTL_MS = 2 * 60 * 60 * 1000
@@ -39,7 +40,15 @@ async function newUpload(claimKey: string, taskKey: string) {
   return { url: uploadUrl(), token: t.token, expiresAt: t.expiresAt.toISOString() }
 }
 
-export type ClaimInput = { taskKey: Hex; wallet: Hex; signature: Hex; idkit: IdkitResult; restart?: boolean }
+export type ClaimInput = {
+  taskKey: Hex
+  wallet: Hex
+  signature: Hex
+  /** World ID proof. Not needed when a valid restart pass is given (the person proved it seconds ago). */
+  idkit?: IdkitResult
+  restart?: boolean
+  restartToken?: string
+}
 
 /** Demo switch: lets a verified person release their own slot and claim again (still one slot per human). */
 export const restartAllowed = () => process.env.DEMO_RESTART === "true"
@@ -49,11 +58,20 @@ export type ClaimDeps = { verify: (result: IdkitResult, expectedSignal: string) 
 export async function claimSlot(
   input: ClaimInput,
   deps: ClaimDeps = { verify: verifyClaimProof },
-): Promise<{ res: ClaimResponse; publicKey: Hex }> {
+): Promise<{ res: ClaimResponse; publicKey: Hex; arkivDone?: Promise<void> }> {
+  let arkivDone: Promise<void> | undefined
   const { taskKey, wallet, signature, idkit } = input
+  const restartRowId =
+    input.restartToken && restartAllowed() ? verifyRestartToken(input.restartToken, taskKey, wallet) : null
+  if (input.restartToken && !restartRowId)
+    fail(401, "restart_expired", "That start-over pass expired. Claim again.")
+  if (!restartRowId && !idkit) fail(400, "invalid", "World ID proof missing")
 
-  // 1. The caller controls the wallet (signature over task + wallet + the RP-signed, single-use nonce).
-  const message = claimMessage(taskKey, wallet, idkit.nonce)
+  // 1. The caller controls the wallet (signature over task + wallet + the single-use World nonce, or the pass).
+  const nonce = restartRowId
+    ? `restart:${(input.restartToken as string).slice(-24)}`
+    : (idkit as IdkitResult).nonce
+  const message = claimMessage(taskKey, wallet, nonce)
   const signer = await recoverMessageAddress({ message, signature }).catch(() => null)
   if (!signer || !isAddressEqual(signer, wallet)) fail(401, "bad_signature", "Wallet signature doesn't match")
   const publicKey = await recoverPublicKey({ hash: hashMessage(message), signature })
@@ -67,8 +85,18 @@ export async function claimSlot(
     fail(410, "task_closed", "This task has closed")
   }
 
-  // 3. A real, unique human, and the proof is bound to this task + wallet.
-  const nullifier = await deps.verify(idkit, claimSignal(taskKey, wallet))
+  // 3. A real, unique human, and the proof is bound to this task + wallet. With a restart pass, the person is the
+  //    one recorded on their previous claim (proved with World ID moments before the pass was issued).
+  let nullifier: string
+  if (restartRowId) {
+    const [prev] = await db().select().from(claimsPrivate).where(eq(claimsPrivate.id, restartRowId)).limit(1)
+    if (!prev || prev.taskKey !== taskKey || prev.status === "released") {
+      fail(409, "restart_used", "That slot was already started over. Claim again.")
+    }
+    nullifier = prev.nullifier
+  } else {
+    nullifier = await deps.verify(idkit as IdkitResult, claimSignal(taskKey, wallet))
+  }
 
   // Reputation gate: free checks and the garbage-data block are per person (World ID), not per wallet.
   const [h] = await db().select().from(humans).where(eq(humans.nullifier, nullifier)).limit(1)
@@ -91,7 +119,7 @@ export async function claimSlot(
     const prior = mine[0]
     const lapsed =
       prior && prior.status !== "submitted" && prior.createdAt.getTime() < Date.now() - CLAIM_TTL_MS
-    const restarting = Boolean(prior && input.restart && restartAllowed())
+    const restarting = Boolean(prior && restartAllowed() && (input.restart || restartRowId))
     if (prior && !lapsed && !restarting) return { kind: "existing" as const, row: prior }
     if (prior && (lapsed || restarting)) {
       // Release this person's own previous slot, keeping the record (its clip may already be uploaded).
@@ -150,34 +178,43 @@ export async function claimSlot(
       fail(409, "already_submitted", "You already sent a clip for this task.", {
         submissionId: job?.id ?? null,
         canRestart,
+        restartToken: canRestart ? issueRestartToken(taskKey, wallet, row.id) : undefined,
       })
     }
-    fail(409, "already_claimed", "You already hold a slot on this task.", { canRestart })
+    fail(409, "already_claimed", "You already hold a slot on this task.", {
+      canRestart,
+      restartToken: canRestart ? issueRestartToken(taskKey, wallet, row.id) : undefined,
+    })
   }
 
-  // 5. Publish the public claim. If Arkiv fails, release the slot so nobody is locked out.
+  // 5. Publish the public claim. The key is predicted (~0.3 s) and returned at once; the Arkiv transaction
+  //    (~7 s) confirms in the background (arkivDone, awaited by the route with after()).
   const challenge = newChallenge()
   const claimant = `c_${randomBytes(5).toString("hex")}`
   let claimKey: Hex
+  const write = startCreate(
+    "web",
+    S.Claim,
+    {
+      task: keyV(taskKey),
+      status: str("active"),
+      slot: u64(reservation.slot),
+      claimant: str(claimant),
+      challenge: str(encodeChallenge(challenge)),
+    },
+    ExpirationTime.fromHours(2),
+  )
   try {
-    const w = await safeCreate(
-      "web",
-      S.Claim,
-      {
-        task: keyV(taskKey),
-        status: str("active"),
-        slot: u64(reservation.slot),
-        claimant: str(claimant),
-        challenge: str(encodeChallenge(challenge)),
-      },
-      ExpirationTime.fromHours(2),
-    )
-    claimKey = w.entityKey
+    claimKey = await write.key
   } catch (e) {
     await d.delete(claimsPrivate).where(eq(claimsPrivate.id, reservation.row.id))
-    console.error("[claims] arkiv write failed", (e as Error).message)
-    fail(503, "arkiv_unavailable", "Couldn't record your claim on Arkiv. No slot was taken. Try again.")
+    console.error("[claims] arkiv unavailable", (e as Error).message)
+    fail(503, "arkiv_unavailable", "Couldn't reach Arkiv. No slot was taken. Try again.")
   }
+  arkivDone = write.done.then(
+    (r) => console.log(JSON.stringify({ evt: "claim_on_arkiv", key: r.entityKey, ms: r.ms })),
+    (e) => console.error("[claims] arkiv write failed after reply", claimKey, (e as Error).message),
+  )
 
   await d
     .update(claimsPrivate)
@@ -186,6 +223,7 @@ export async function claimSlot(
   await d.insert(contributors).values({ wallet: wallet.toLowerCase() }).onConflictDoNothing()
 
   return {
+    arkivDone,
     publicKey,
     res: {
       claimKey,
