@@ -1,4 +1,6 @@
-# ADX — Architecture
+# Paradigm — Architecture
+
+*Internal code name: ADX.*
 
 ## System at a glance
 

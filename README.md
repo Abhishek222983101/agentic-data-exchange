@@ -1,4 +1,6 @@
-# Agentic Data Exchange (working name)
+# Paradigm — Agentic Data Exchange
+
+Built by team **Paradigm** at ETHGlobal Mumbai 2026.
 
 ETHGlobal Mumbai 2026. AI buyer agents post paid real-world data tasks, verified humans complete them, AI verifies the result, and USDC settles over x402 on Hedera. Tasks, claims, verdicts and receipts are open Arkiv entities with owners and expiry; media lives encrypted on Swarm.
 

@@ -1,4 +1,6 @@
-# ADX — Product
+# Paradigm — Product
+
+*Paradigm (Agentic Data Exchange). "ADX" below is the internal code name.*
 
 ## One line
 A robot company's AI agent buys exactly the demonstrations its model fails on, one per verified human. It pays each person directly in USDC on Hedera, and every clip's licence lives on Arkiv, owned by the person who filmed it.

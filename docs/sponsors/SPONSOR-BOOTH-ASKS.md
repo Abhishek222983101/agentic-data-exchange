@@ -1,6 +1,6 @@
 # Team Paradigm — asks for sponsor booths (ETHGlobal Mumbai 2026)
 
-**Project:** Agentic Data Exchange (ADX). AI buyer agents post paid real-world data tasks (short video demonstrations for robot training). Verified humans film them, AI verifies each clip, and USDC settles over x402 on Hedera. Every task, claim, verdict, receipt and licence is an open Arkiv entity with an owner and an expiry. Clips are encrypted on our side and stored on Swarm.
+**Project:** Paradigm (Agentic Data Exchange). AI buyer agents post paid real-world data tasks (short video demonstrations for robot training). Verified humans film them, AI verifies each clip, and USDC settles over x402 on Hedera. Every task, claim, verdict, receipt and licence is an open Arkiv entity with an owner and an expiry. Clips are encrypted on our side and stored on Swarm.
 
 - Live app: https://adx-paradigm.vercel.app
 - Repo (public, MIT): https://github.com/Abhishek222983101/agentic-data-exchange

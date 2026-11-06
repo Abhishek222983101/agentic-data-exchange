@@ -1,4 +1,6 @@
-# AGENTS.md — guide for AI coding agents on ADX
+# AGENTS.md — guide for AI coding agents on Paradigm
+
+**Naming:** the product and team are **Paradigm** (tagline: "Agentic Data Exchange"). Use "Paradigm" in all user-facing UI, page titles, metadata, README and video. `adx` is only the internal code name (Arkiv namespace `adx.*`, folder names, package scope `@adx/*`).
 
 ## Read first (in this order)
 1. `docs/build/SYSTEM-ARCHITECTURE.md` — **the main reference**: requirements (word for word), architecture, modules, data, build plan §19.
@@ -33,6 +35,6 @@ Summarise the requirements relevant to your current sub-phase before writing cod
 Deleting data, rotating keys, changing Railway/Vercel/Neon settings, spending more than test amounts, or posting anything outside the repo needs explicit approval from the user.
 
 ## Repository facts
-- Owner: Abhishek (team Paradigm). Git identity: noreply email (set repo-local).
+- Owner: Abhishek, team Paradigm. Git identity: noreply email (set repo-local).
 - Live: https://adx-paradigm.vercel.app · Repo: https://github.com/Abhishek222983101/agentic-data-exchange
 - Deadline: Sat 7 Nov 2026 09:00 IST.

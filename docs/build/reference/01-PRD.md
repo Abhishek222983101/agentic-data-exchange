@@ -3,7 +3,7 @@
 > Companion doc. **Source of truth: `docs/build/SYSTEM-ARCHITECTURE.md`.** If anything here conflicts with it, the system architecture wins; flag the conflict instead of guessing.
 
 ## Product name and one-sentence idea
-**ADX (Agentic Data Exchange):** robot teams' AI agents buy exactly the real-world demonstrations their models fail on, one per verified human, paying each person in USDC on Hedera, with every task, verdict, receipt and licence as an open Arkiv record.
+**Paradigm (Agentic Data Exchange; code name ADX):** robot teams' AI agents buy exactly the real-world demonstrations their models fail on, one per verified human, paying each person in USDC on Hedera, with every task, verdict, receipt and licence as an open Arkiv record.
 
 ## Target users
 | User | Who | What they need |

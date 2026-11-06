@@ -1,4 +1,6 @@
-# ADX — The overview (read this first)
+# Paradigm — The overview (read this first)
+
+*Paradigm is the product and team name; "ADX" (Agentic Data Exchange) is the internal code name you'll see in code and docs.*
 
 ![ADX system architecture](diagrams/00-architecture.png)
 
