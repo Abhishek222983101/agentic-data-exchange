@@ -9,7 +9,8 @@
     "x402:smoke": "node --env-file=.env --experimental-strip-types scripts/x402-smoke.ts",
     "swarm:smoke": "node --env-file=.env --experimental-strip-types scripts/swarm-smoke.ts",
     "swarm:fund": "node --env-file=.env --experimental-strip-types scripts/swarm-fund.ts",
-    "swarm:fund-node": "node --env-file=.env --experimental-strip-types scripts/swarm-fund-node.ts"
+    "swarm:fund-node": "node --env-file=.env --experimental-strip-types scripts/swarm-fund-node.ts",
+    "swarm:buy-batch": "node --env-file=.env --experimental-strip-types scripts/swarm-buy-batch.ts"
   },
   "dependencies": {
     "@arkiv-network/sdk": "1.0.1",
