@@ -4,10 +4,12 @@
   "type": "module",
   "packageManager": "pnpm@10.0.0",
   "scripts": {
-    "arkiv:smoke": "node --env-file=.env --experimental-strip-types scripts/arkiv-smoke.ts"
+    "arkiv:smoke": "node --env-file=.env --experimental-strip-types scripts/arkiv-smoke.ts",
+    "hedera:setup": "node --env-file=.env --experimental-strip-types scripts/hedera-setup.ts"
   },
   "dependencies": {
     "@arkiv-network/sdk": "1.0.1",
+    "@hiero-ledger/sdk": "2.90.1",
     "viem": "2.57.16"
   }
 }
