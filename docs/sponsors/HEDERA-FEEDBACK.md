@@ -12,6 +12,7 @@
 | Contributor accounts | **Alias accounts** created from the person's wallet public key: `setECDSAKeyWithAlias` + `setMaxAutomaticTokenAssociations(-1)`, so USDC lands with no manual association |
 | Agent audit trail | **HCS** topic `0.0.11343565`: every decision (paid, paused, approved, declined) with Claude's one-line note |
 | Checks | **Mirror Node REST** to confirm every settlement |
+| Agent tooling | **Hedera Agent Kit** 4.2.0 called from code (no LLM): the spend log goes through `submit_topic_message_tool`, and a USDC balance check (`get_account_token_balances`) runs before each payment. Only those two tools are loaded, so no transfer tool exists for a model to misuse |
 
 **Proven live:**
 - Autonomous 3 USDC sales to a real contributor.
@@ -27,6 +28,7 @@
 | H-3 | 🟠 Medium | **`PublicKey.fromBytesECDSA` rejects the 65-byte uncompressed key** that viem and most wallets return: `BadKeyError: cannot decode ECDSA public key from this DER format`. It wants the 33-byte compressed form | `scripts/hedera-alias-spike.ts` with an uncompressed key | Compress (02/03 ‖ x) first (`packages/shared/src/hedera.ts`). The account was then created in 2.4 s | Accept both forms, or name the expected length in the error |
 | H-4 | 🟡 Low | **`AccountBalanceQuery` is deprecated** in `@hiero-ledger/sdk` 2.90.1 (the version `@x402/hedera` pins) and throws, yet most tutorials still use it | `new AccountBalanceQuery().setAccountId(id).execute(client)` | Mirror Node REST for balances | Update the tutorials, and link the mirror query in the error |
 | H-5 | 🟡 Low | **Circle's faucet rejects `0x…` addresses for Hedera**, even for ECDSA alias accounts. Only `0.0.x` works | faucet.circle.com → Hedera Testnet → paste the EVM address | Use the `0.0.x` id | Accept EVM aliases |
+| H-7 | 🟠 Medium | **Agent Kit `HederaAgentAPI.run()` doesn't throw on a failed tool.** It returns a JSON string with `raw.status: "ERROR"`, so code that relies on try/catch treats a failed write as success | Run `submit_topic_message_tool` against a bad topic id and catch | Check `raw.status` in our wrapper (`apps/agent/src/hedera-kit.ts`) | Throw, or return a typed `{ ok: false }` |
 | H-6 | 🟡 Low | `@x402/hedera` re-exports the Hiero SDK, so importing `@hiero-ledger/sdk` separately can produce duplicate-instance errors | Import both in one app | Import from one place only | Note it in the package README |
 
 ## What worked well

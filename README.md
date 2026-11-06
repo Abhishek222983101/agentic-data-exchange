@@ -118,7 +118,7 @@ pnpm sponsor:check            # live ✅/⏳/❌ against Hedera, Arkiv, Swarm, W
 
 Public libraries and official starters only. No code from prior projects.
 - **Arkiv:** `@arkiv-network/sdk` 1.0.1
-- **Hedera:** `@x402/next`, `@x402/fetch`, `@x402/hedera` 2.30.0, `@hiero-ledger/sdk` 2.90.1
+- **Hedera:** `@x402/next`, `@x402/fetch`, `@x402/hedera` 2.30.0, `@hiero-ledger/sdk` 2.90.1, `@hashgraph/hedera-agent-kit` 4.2.0 (spend log + balance check, called from code; no transfer tools loaded)
 - **World:** `@worldcoin/idkit` 4.6 + `@worldcoin/idkit-server` 1.2 (the verify route started from the official Next.js example, hardened), World IdP OIDC device grant, `jose`
 - **Swarm:** Bee 2.8.3 (`ethersphere/bee`), plain HTTP API
 - **AI:** `@google/genai` 3.0 (Gemini 3 Flash), Anthropic Messages API (Claude Haiku, notes only)
