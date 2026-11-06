@@ -1,6 +1,6 @@
 # Arkiv schema
 
-ADX writes eight entity types to the Arkiv **Rabdi** testnet (chain 7794095) with `@arkiv-network/sdk` 1.0.1. Every entity is defined once with `defineSchema()` in `packages/shared/src/arkiv/schemas.ts`. All values are public, so a write guard blocks secrets and personal data before any write.
+Paradigm (code name ADX) defines eight entity types and writes seven of them in production to the Arkiv **Rabdi** testnet (chain 7794095) with `@arkiv-network/sdk` 1.0.1. Every entity is defined once with `defineSchema()` in `packages/shared/src/arkiv/schemas.ts`. All values are public, so a write guard blocks secrets and personal data before any write.
 
 **Trust rule:** anyone can write an entity named `adx.task`. Readers trust a record only through its `$owner` (or `$creator`) wallet, so every query in our app and our docs filters by owner.
 
@@ -10,9 +10,10 @@ ADX writes eight entity types to the Arkiv **Rabdi** testnet (chain 7794095) wit
 
 | Role | Address |
 |---|---|
-| Platform (claims, submissions, licence creation) | _filled in at first deploy_ |
-| Verifier (verdicts, receipts, verifier listing) | _filled in at first deploy_ |
-| Buyer agent (tasks, manifests) | _filled in at first deploy_ |
+| Buyer agent (tasks, manifests) | [`0x0F00CFF8dae364c5d7c0840A2C92DFc7d087Dcc6`](https://rabdi.explorer.arkiv.network/address/0x0F00CFF8dae364c5d7c0840A2C92DFc7d087Dcc6) |
+| Platform web (claims, licence creation) | [`0x2dEc12a23ec38830f7f314B33b144D4d1fe4D98C`](https://rabdi.explorer.arkiv.network/address/0x2dEc12a23ec38830f7f314B33b144D4d1fe4D98C) |
+| Worker (submissions) | [`0xCDFa94802dEEAaf2ce7E694F2d16BE2628d52A51`](https://rabdi.explorer.arkiv.network/address/0xCDFa94802dEEAaf2ce7E694F2d16BE2628d52A51) |
+| Verifier (verdicts, receipts, verifier listing) | [`0x0C736210492F8d86A1Fe4297cD7A5804ed48F421`](https://rabdi.explorer.arkiv.network/address/0x0C736210492F8d86A1Fe4297cD7A5804ed48F421) |
 | Smoke test (first write) | `0x4aEC505abaFc1EC58A38529e29A1164314deC3f7` |
 
 ## Entities
@@ -27,9 +28,9 @@ Lets any buyer agent find a verifier and its paid endpoint without knowing about
 | `price` | dec | ✓ | USDC per accepted clip |
 | `endpoint` | str | | x402 base URL |
 | `payTo` | str | | Hedera account that receives payment |
-| `model` | str | | Verifier model, e.g. `claude-haiku-5-5` |
+| `model` | str | | Verifier model, e.g. `gemini-3-flash-preview` |
 
-- **Owner:** verifier wallet. **Expiry:** 24 h, extended by a heartbeat every hour. If the verifier goes down, its listing disappears by itself.
+- **Owner:** verifier wallet. **Expiry:** 24 h, extended (`extendEntity`) by the agent's heartbeat. If the verifier goes down, its listing disappears by itself.
 
 ### `adx.task`: a paid data task
 | Column | Type | Indexed | Meaning |
@@ -44,6 +45,7 @@ Lets any buyer agent find a verifier and its paid endpoint without knowing about
 | `failureTag` | str | | Which model failure this targets |
 | `rubricRef` | str | | Swarm ref of the public rubric JSON |
 | `rubricHash` | str | | sha256 of the rubric, so anyone can check it |
+| `rubric` | bytes | | The rubric JSON itself (`str()` caps at 128 bytes), so the board and the verifier never depend on a gateway |
 
 - **Owner:** buyer agent wallet. **Expiry:** the task deadline. When it passes, the task vanishes from every board with no cleanup job.
 
@@ -51,12 +53,12 @@ Lets any buyer agent find a verifier and its paid endpoint without knowing about
 | Column | Type | Indexed | Meaning |
 |---|---|---|---|
 | `task` | key | ✓ | The task entity key |
-| `status` | str | ✓ | `active`, `submitted` |
+| `status` | str | ✓ | `active` |
 | `slot` | u64 | ✓ | Slot number |
 | `claimant` | str | | Fresh pseudonym per claim (hash of a random salt). **Never** the nullifier |
 | `challenge` | str | | Liveness challenge shown to the contributor (spoken word + finger count) |
 
-- **Owner:** platform wallet. **Expiry:** 2 h (the claim window). An abandoned claim frees its slot by itself. On submit the claim is patched to `submitted` and extended to 24 h.
+- **Owner:** platform wallet. **Expiry:** 2 h (the claim window). An abandoned claim frees its slot by itself; the board counts live claims from Arkiv.
 
 ### `adx.submission`: a recorded clip
 | Column | Type | Indexed | Meaning |
@@ -64,13 +66,13 @@ Lets any buyer agent find a verifier and its paid endpoint without knowing about
 | `task` | key | ✓ | Task |
 | `claim` | key | ✓ | Claim |
 | `status` | str | ✓ | `pending`, `accepted`, `rejected`, `review` |
-| `dhashBucket` | str | ✓ | First 4 hex of the clip's perceptual hash, for near-duplicate lookup across all buyers |
-| `dhash` | str | | Full 64-bit perceptual hash (hex) |
+| `dhashA`, `dhashB`, `dhashC` | str | ✓ | First 4 hex of the perceptual hash of three frames (start, middle, end): near-duplicate lookup across all buyers |
+| `dhash` | str | | The three full 64-bit hashes, `a|b|c` |
 | `swarmRef` | str | | 64-hex Swarm reference of the **ciphertext** (no key inside) |
 | `cipherSha256` | str | | sha256 of the ciphertext |
 | `durationMs` | u64 | | Clip length |
 
-- **Owner:** platform wallet. **Expiry:** 30 days.
+- **Owner:** worker wallet. **Expiry:** 30 days.
 
 ### `adx.verification`: the AI verdict
 | Column | Type | Indexed | Meaning |
@@ -111,7 +113,7 @@ Lets any buyer agent find a verifier and its paid endpoint without knowing about
 | `termsHash` | str | | sha256 of the licence terms |
 
 - **Creator:** platform wallet. **Owner:** the contributor's wallet, set with `changeOwnership` right after creation. **Expiry:** the licence term (90 days), renewable by the contributor.
-- **Withdrawal:** the contributor deletes the entity (only the owner can). Buyer agents query live licences before each training run, so a withdrawn clip drops out immediately.
+- **Withdrawal (designed, not built):** the contributor deletes the entity (only the owner can), and buyer agents query live licences before each use, so a withdrawn clip drops out.
 
 ### `adx.manifest`: a dataset
 | Column | Type | Indexed | Meaning |
@@ -139,4 +141,4 @@ publicClient.select({ $key: true, title: true, reward: true, deadline: true })
   .fetch()
 ```
 
-A `curl` version against the Rabdi JSON-RPC goes in the README once the writer wallets are live.
+A `curl` version against the public Rabdi JSON-RPC (no key needed) is in the [README](../README.md#arkiv).
