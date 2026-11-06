@@ -29,6 +29,7 @@ export async function submissionView(id: string): Promise<SubmissionView | null>
       claimKey: jobs.claimKey,
       status: jobs.status,
       bytes: jobs.bytes,
+      challenge: jobs.challenge,
       createdAt: jobs.createdAt,
     })
     .from(jobs)
