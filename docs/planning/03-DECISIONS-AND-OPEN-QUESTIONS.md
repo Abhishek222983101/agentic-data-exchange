@@ -117,3 +117,13 @@ User direction (6 Nov): build production-grade, not a hackathon toy; Arkiv is th
 
 Ask at booths: World (mocked proofs), Swarm/Arkiv (hackathon postage batch, gateway size limits), Hedera (per-request payTo in @x402/hedera; two-track eligibility), ETHGlobal (written plan as "designs").
 Need from teammate: SESSION-HANDOFF.md, 05-SWARM-DOCS-CHECK.md.
+
+## Build decisions (6 Nov 2026, ~12:30 IST)
+| # | Decision | Status |
+|---|---|---|
+| D22 | Contributor wallet: embedded (passkey PRF), same key = Arkiv owner + Hedera ECDSA alias | DECIDED |
+| D23 | Stack: TypeScript everywhere + native ffmpeg/libvips. Rust module dropped (no real speed gain) | DECIDED |
+| D24 | Demo task: towel folding, top-down, 3 slots | DECIDED |
+| D25 | UI: own grey/black brand, light + dark, Arkiv orange accent; tessera-guard/d3coy as visual reference only (from-scratch rule) | DECIDED |
+| D26 | Clip verifier: Gemini 3 Flash, one call with video + audio, strict schema, temperature 0; code decides; unsure → human review. Claude Haiku only for agent text. Whisper and second-opinion model dropped | DECIDED |
+| D27 | x402 sells the clip (decryption key + licence); purchases auto under the policy threshold; Agent Pass approval only for payouts above it (bonus path) | DECIDED |

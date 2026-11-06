@@ -31,13 +31,13 @@ Every user-facing step, with what triggers it, what the user sees while it runs,
 Notes: `MediaRecorder.start(1000)` (iOS freeze bug), mp4 with webm fallback, max 30 s.
 
 ## F4. Worker verifies (no UI, drives F3 status)
-1. Pull the job from Neon, download the raw clip from staging.
-2. ffmpeg: duration check, 1 fps frames, audio track.
-3. dHash per frame → clip hash. Query Arkiv `adx.submission` where `dhashBucket` = first 4 hex (all buyers) → Hamming distance < 10 = duplicate → reject with reason "matches an existing clip".
-4. AI review: Claude Haiku 5.5 on frames + transcript of the spoken word (Groq Whisper) against the rubric and the liveness challenge → `{verdict, score, steps:[{t, ok, reason}]}`. Gemini 3 Flash on the full video if Haiku errors or the score is borderline (40–60 → `review`).
+1. Pull the job from Neon; the raw clip is already on the worker's disk from the upload.
+2. ffprobe: duration 15–35 s, video + audio present.
+3. In parallel: (a) ffmpeg 3 frames → sharp dHash → Arkiv `adx.submission` bucket query across all buyers → Hamming < 10 = duplicate → reject "matches an existing clip"; (b) Gemini 3 Flash watches the full clip with audio against the rubric and liveness challenge, strict JSON schema, temperature 0.
+4. Code rules: wrong word or finger count → reject; missing step → reject; not_visible / low confidence / impossible timestamps → `review`; else accept.
 5. AES-256-GCM encrypt → upload ciphertext to our Bee node with batch `c0cc5436…` → plain 64-hex ref.
-6. Store the key in Neon. Delete the raw clip from staging.
-7. Write `adx.submission` (platform) and `adx.verification` (verifier). Patch the claim to `submitted`.
+6. Store the key in Neon. Delete the raw clip.
+7. Write `adx.submission` (platform) and `adx.verification` (verifier) in parallel. Patch the claim to `submitted`.
 
 ## F5. Buyer agent pays (Hedera x402) — auto path
 | Step | What happens |
@@ -92,7 +92,7 @@ A separate script, sharing no code or API with our app beyond the public schema 
 | Arkiv RPC slow / rate-limited | Reads cached for 5 s server-side; writes queued; UI shows "syncing" instead of failing |
 | Clip too short / no audio / wrong orientation | Rejected before AI review with a specific reason |
 | Duplicate clip from another buyer's platform | Rejected: "matches an existing clip" with the matching submission key |
-| AI provider down | Claude → Gemini → `review` (human queue), never a silent accept |
+| AI provider down | Gemini retry once → `review` (human queue), never a silent accept |
 | Swarm upload fails | Retry 3×; raw clip kept in staging until success; status shows "storing" |
 | Settlement fails | Payment `failed`, no receipt, no key, agent notified; budget not consumed |
 | Approval approved by the wrong account | id_token `sub` not on the approver allowlist → treated as denied |

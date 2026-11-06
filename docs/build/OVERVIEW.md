@@ -14,7 +14,7 @@ ADX is a marketplace where **an AI agent is the buyer**. It posts paid tasks for
 | **File storage** | Where the video clips live, scrambled (encrypted) so only a paying buyer can open them | **Swarm** |
 | **Payments** | The agent pays per clip over "x402", a way for software to pay inside a normal web request. Settles in USDC in seconds | **Hedera** |
 | **Human checks** | Proves each contributor is a unique real person (one slot each), and lets the buyer's human approve big payments with a fresh face check | **World ID** |
-| **The brain** | AI that writes tasks (Claude) and checks clips (Claude + Whisper, Gemini as backup) | Anthropic, Groq, Google |
+| **The brain** | AI that checks clips (Gemini watches the video with sound) and writes the agent's tasks (Claude) | Google, Anthropic |
 
 ## One task, start to finish
 1. **The agent posts a task.** "Fold a towel, filmed from above. 3 people needed. 3 USDC each. Open for 24 hours." It becomes a public record on Arkiv that disappears by itself when the 24 hours are up.
@@ -32,7 +32,7 @@ ADX is a marketplace where **an AI agent is the buyer**. It posts paid tasks for
 - **Contributors own their licence.** Ownership and expiry on Arkiv make consent checkable and withdrawable, right as India's DPDP consent rules start (13 Nov 2026).
 
 ## The build phases in plain words
-Difficulty is out of 5. We build in this order because each phase needs the one before. The hardest phases are 4, 5 and 6, so we reach them as early as the order allows.
+Difficulty is out of 5. We build in this order because each phase needs the one before. The hardest phases are 6, 5 and 2 (then 4), so we reach them as early as the order allows.
 
 | Phase | What it is | Difficulty | What you'll see when it's done |
 |---|---|---|---|
@@ -40,7 +40,7 @@ Difficulty is out of 5. We build in this order because each phase needs the one 
 | **1 Arkiv core** | Define the 8 record types, a safety check that blocks secrets from going public, the first reads | 3 | A real task on the board, read live from Arkiv, plus an "explorer" page showing the raw records |
 | **2 Identity** | A wallet that lives in the phone (no app install), and World ID to claim a slot | 4 | Claim a task; a second try by the same person is refused |
 | **3 Capture** | The camera screen with the challenge, and uploading the clip | 3 | Record a clip with a progress bar |
-| **4 Verification** | The checking machine: frames, duplicate check, AI verdict, encryption, Swarm storage, Arkiv records | **5** | The clip's checks ticking off live on the phone, then a verdict with timestamps |
+| **4 Verification** | The checking machine: duplicate check, AI verdict, encryption, Swarm storage, Arkiv records | 4 | The clip's checks ticking off live on the phone, then a verdict with timestamps |
 | **5 Payments** | The paid endpoint and what happens after money arrives (receipt, licence) | **5** | A real payment on HashScan and a receipt on Arkiv |
 | **6 Agent** | The buyer agent: posts tasks, decides payments by its rules, asks a human above the limit, logs every decision publicly | **5** | The agent paying on its own; a big payment waiting for phone approval; a declined one paying nothing |
 | **7 Licences** | My licences, withdraw, and the outside-agent check | 3 | Withdraw a licence and watch the agent drop the clip |
@@ -52,17 +52,18 @@ Difficulty is out of 5. We build in this order because each phase needs the one 
 - **The policy engine** (`apps/agent/src/policy.ts`): the rules that decide whether the agent may pay. It's the heart of the Hedera "spending controls" score and the reason a hijacked prompt can't drain the wallet.
 - **The write guard** (`packages/shared/src/arkiv/guard.ts`): everything on Arkiv is public, so this blocks anything that looks like a secret before it's written.
 - **The payment hook** (`onAfterSettle` in the paid endpoint): receipts, licences and the unlock key are only produced *after* the money has really moved.
-- **The verification pipeline** (`apps/worker/src/pipeline/`): the "ML" part. It turns a video into frames, fingerprints them in Rust (to catch re-uploads), asks the AI for a step-by-step verdict, and stores the encrypted clip.
+- **The verification pipeline** (`apps/worker/src/pipeline/`): fingerprints the clip to catch re-uploads, asks Gemini for a step-by-step verdict, lets plain code decide, and stores the encrypted clip.
 - **The Arkiv schemas** (`packages/shared/src/arkiv/schemas.ts`): the 8 record types everything else reads and writes.
 
-## How the AI checking works (the "ML pipeline")
-We don't train a model. We orchestrate strong existing models, with plain code making the final call:
-1. **Frames:** ffmpeg pulls 1 frame per second plus 8 sharp keyframes and the audio.
-2. **Fingerprint:** a tiny Rust program turns frames into "perceptual hashes", fingerprints that stay almost the same even if a video is re-compressed. We compare them with every clip on Arkiv to catch re-uploads, even ones sold to other buyers.
-3. **Listen:** Whisper (on Groq) writes down what was said, to check the challenge word.
-4. **Look:** Claude Haiku looks at the keyframes against the task's checklist and returns, as structured data, which steps happened and at what second.
-5. **Decide (code, not AI):** wrong word or a missing step → reject. Confident and complete → accept. Unsure → ask Gemini for a second opinion → still unsure → human review. Never a silent accept.
-6. **Measure:** we test it on 16 clips we record ourselves and publish the real error rates.
+## How the AI checking works
+We don't train a model. One strong AI looks at each clip, and plain code makes the final call:
+1. **Fingerprint (catch re-uploads):** ffmpeg grabs 3 frames (0.3 s). A small TypeScript step turns each into a "perceptual hash", a fingerprint that stays almost the same even if a video is re-compressed. We compare them with every clip on Arkiv, including clips sold to other buyers.
+2. **Watch and listen:** Gemini 3 Flash watches the whole clip *with sound* in one call. It reports, in a fixed format, whether it heard the challenge word, how many fingers it saw, and which fold steps happened at which second, each with a one-line reason.
+3. **No guessing allowed:** for every step Gemini can answer "not visible", so it never has to invent anything. Its timestamps are checked by code: they must be inside the clip and in order.
+4. **Code decides:** wrong word, wrong finger count, or a missing step → reject. Anything unclear → human review. Clean and confident → accept. The AI never gets the final say.
+5. **Measure:** we run 16 clips we recorded ourselves and publish the real error rates.
+
+Why Gemini and not Claude here: Claude's API can't take video or audio, so it would only see a few still frames and a separate transcript. Gemini sees and hears the whole clip. Claude is still used by the buyer agent to write tasks.
 
 ## Where things live
 - **Live app:** https://adx-paradigm.vercel.app

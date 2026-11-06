@@ -203,13 +203,13 @@ IDKit: "Build a product that uses IDKit to solve a real trust moment… We are r
 | # | Decision | Why |
 |---|---|---|
 | D-1 | Web app first (mobile-first, installable PWA). No native app | Instant phone testing, judges open a link |
-| D-2 | TypeScript for every service that touches a sponsor SDK; native C libraries (ffmpeg, libvips) and a Rust binary for media hot paths | Sponsor SDKs are TS-only; CPU work lives in native code; network dominates latency |
+| D-2 | TypeScript everywhere; native C libraries (ffmpeg, libvips via sharp) for the little media work there is | Sponsor SDKs are TS-only; network dominates latency; one language is fastest to build |
 | D-3 | Embedded contributor wallet (secp256k1 in the browser, sealed with a passkey via WebAuthn PRF), one key = Arkiv owner + Hedera ECDSA alias account | No wallet install; same key owns the licence and receives USDC |
 | D-4 | Demo task family: towel folding (top-down), 3 slots | Known hard manipulation case, filmable anywhere |
 | D-5 | Neon Postgres (private) + Drizzle; jobs in Postgres (`SKIP LOCKED`) | Real UNIQUE constraints, one fewer service |
 | D-6 | Clip upload goes phone → worker (Railway public endpoint, single-use token), not through Vercel | Vercel caps bodies at 4.5 MB |
 | D-7 | Clips encrypted on our side (AES-256-GCM) before Swarm; only plain ciphertext refs go on Arkiv | Satisfies S-3 by construction; gateways never see plaintext |
-| D-8 | AI verdict: Claude Haiku 5.5 on frames + Groq Whisper transcript; Gemini 3 Flash on full video as fallback; borderline → `review` | Cheap, fast, never a silent accept |
+| D-8 | AI verdict: Gemini 3 Flash watches the full clip with audio in one call (strict schema, temperature 0); code decides; unsure → `review`. Claude Haiku only for the agent's text | Most accurate (sees everything, hears the word), fewest moving parts, never a silent accept |
 | D-9 | Agent Pass for spend approval above threshold (Orb + face, fresh); IDKit Selfie Check for claims | Tiered "minimum sufficient assurance" |
 | D-10 | Policy engine is deterministic code; the LLM only proposes | Spending controls that a prompt can't bypass |
 | D-11 | UI: our own clean grey/black brand with light + dark themes, Arkiv orange as the single accent; tessera-guard/d3coy used **only as visual reference** (no code, assets or design files copied — E-1) | Product-grade look, rule-safe |
@@ -233,14 +233,13 @@ IDKit: "Build a product that uses IDKit to solve a real trust moment… We are r
 ## 6. The stack: which language does what, and why
 
 ### 6.1 The honest performance picture
-The slow parts of ADX are network-bound: an Arkiv write resolves in ~7 s (2 s blocks + receipt), a 10 MB Swarm upload takes seconds, an AI call takes 3–6 s, x402 settlement ~2 s (measured: 2.2 s). Rewriting TypeScript in Rust would save milliseconds on work that takes seconds. So performance comes from (a) **parallelism** (Arkiv writes for different signers in parallel, AI and transcript in parallel), (b) **native code where CPU actually matters** (decoding video, resizing frames, hashing), and (c) **a lean frontend** (React Server Components, little client JS on the recorder).
+The slow parts of ADX are network-bound: an Arkiv write resolves in ~7 s (2 s blocks + receipt), a 10 MB Swarm upload takes seconds, an AI call takes 3–6 s, x402 settlement ~2 s (measured: 2.2 s). A faster language would save milliseconds on work that takes seconds, so we use one language (TypeScript) and get performance from (a) **parallelism** (Arkiv writes for different signers in parallel, dedup in parallel with the AI call), (b) **native code where CPU matters** (ffmpeg, libvips), (c) **one AI call per clip** instead of a chain, and (d) **a lean frontend** (React Server Components, little client JS on the recorder).
 
 ### 6.2 Language map
 | Language / runtime | Where | Why |
 |---|---|---|
 | **TypeScript (Node 22)** | `apps/web`, `apps/worker`, `apps/agent`, `packages/*`, `scripts/` | Arkiv SDK, x402 Hedera, IDKit, Hiero SDK and AI SDKs are TS-first; one type system across services |
-| **Rust** | `crates/adx-media` → `adx-media` CLI | Perceptual hashing (dHash) of frames + Hamming search, ~100× faster than JS loops, single static binary in the worker image |
-| **C (via native libs)** | ffmpeg/ffprobe (decode, frames, audio), libvips via `sharp` (resize) | Battle-tested native media pipeline |
+| **C (via native libs)** | ffmpeg/ffprobe (probe, 3 frames), libvips via `sharp` (resize + dHash) | Battle-tested native media code; < 1 s CPU per clip |
 | **SQL** | Neon Postgres 18, Drizzle migrations | Constraints (UNIQUE nullifier), `SKIP LOCKED` queue |
 | **Solidity** | **none** | "No Solidity Allowed" track; Hedera native services only |
 
@@ -259,16 +258,15 @@ The slow parts of ADX are network-bound: an Arkiv write resolves in ~7 s (2 s bl
 | `@worldcoin/idkit` / `idkit-core` / `idkit-server` | 4.6.0 / 4.6.0 / 1.2.0 | web |
 | `openid-client` | 6.8.x | agent, web (Agent Pass) |
 | `jose` | 6.x | web (id_token validation) |
-| `@anthropic-ai/sdk` | latest | worker, agent (model `claude-haiku-5-5`) |
-| `@google/genai` | 2.32.x | worker (model `gemini-3-flash-preview`) |
-| `groq-sdk` | latest | worker (`whisper-large-v3-turbo`) |
+| `@anthropic-ai/sdk` | latest | agent (model `claude-haiku-5-5`, text only) |
+| `@google/genai` | 2.32.x | worker verifier (model `gemini-3-flash-preview`) |
+| `sharp` | latest | worker (dHash fingerprints) |
 | `drizzle-orm` / `drizzle-kit` / `@neondatabase/serverless` | latest | db |
 | `@ethersphere/bee-js` | 13.2.0 | worker (or plain `fetch` to Bee `/bytes`) |
 | `zod` | 4.x | everywhere (env + API validation) |
 | `hono` | 4.x | worker + agent HTTP servers |
 | Bee | 2.8.3 | infra/bee |
 | ffmpeg | 7.x (Debian package in worker image) | worker |
-| Rust | 1.8x stable, crates `image` + `clap` + `serde_json` | crates/adx-media |
 | Biome | 2.x | lint + format (Rust-based, fast) |
 | Vitest / Playwright | latest | tests |
 
@@ -308,8 +306,8 @@ adx/
 │   ├── worker/                 Node 22 (Railway): upload endpoint + job runner
 │   │   ├── src/server.ts       Hono: POST /upload/:token, GET /health
 │   │   ├── src/runner.ts       job loop (SKIP LOCKED)
-│   │   ├── src/pipeline/       probe.ts, frames.ts, hash.ts, dedup.ts, transcribe.ts, verify.ts, encrypt.ts, swarm.ts, publish.ts
-│   │   └── Dockerfile          node:22-slim + ffmpeg + adx-media (multi-stage Rust build)
+│   │   ├── src/pipeline/       probe.ts, frames.ts, fingerprint.ts, dedup.ts, verify.ts, rules.ts, encrypt.ts, swarm.ts, publish.ts
+│   │   └── Dockerfile          node:22-slim + ffmpeg
 │   └── agent/                  Node 22 (Railway): buyer agent
 │       ├── src/main.ts         loop + Hono status API
 │       ├── src/brain.ts        Claude Haiku tool-use (proposes)
@@ -318,7 +316,6 @@ adx/
 │       ├── src/approval.ts     World Agent Pass device flow
 │       ├── src/hcs.ts          spend-log topic
 │       └── failures.json       model failure cases (demo input)
-├── crates/adx-media/           Rust: dhash + hamming CLI
 ├── packages/
 │   ├── shared/                 arkiv/ (schemas, client, guard, queue, queries), crypto.ts, env.ts, types.ts, events.ts
 │   └── db/                     drizzle schema, migrations, client
@@ -356,7 +353,7 @@ flowchart TB
   end
 
   subgraph RAILWAY[Railway · project adx]
-    WK[apps/worker<br/>upload endpoint + job runner<br/>ffmpeg · adx-media Rust · AI · AES-GCM]:::ours
+    WK[apps/worker<br/>upload endpoint + job runner<br/>ffmpeg · sharp dHash · Gemini · AES-GCM]:::ours
     AG[apps/agent<br/>brain: Claude Haiku<br/>policy · pay · approvals · HCS]:::ours
     BEE[infra/bee<br/>Bee 2.8.3 light node<br/>batch c0cc5436…]:::ours
     RR[infra/rpc-router<br/>Sepolia RPC]:::ours
@@ -375,9 +372,8 @@ flowchart TB
   end
 
   subgraph MODELS[AI providers]
-    CL[Claude Haiku 5.5]:::ai
-    GQ[Groq Whisper]:::ai
-    GE[Gemini 3 Flash fallback]:::ai
+    GE[Gemini 3 Flash<br/>clip verifier]:::ai
+    CL[Claude Haiku 5.5<br/>agent text]:::ai
   end
 
   C -->|1 browse / claim| UI
@@ -387,8 +383,8 @@ flowchart TB
   API -->|adx.claim| ARK
   C -->|2 clip upload, single-use token| WK
   WK --> PG
-  WK -->|frames| CL & GQ
-  WK -.->|fallback| GE
+  WK -->|full clip + rubric| GE
+  AG -->|draft tasks| CL
   WK -->|dedup query| ARK
   WK -->|ciphertext| BEE --> SW
   BEE --> RR --> SEP
@@ -489,27 +485,19 @@ sequenceDiagram
   participant K as worker /upload
   participant DB as Neon
   participant R as runner
-  participant M as adx-media (Rust)
-  participant AI as Claude / Groq / Gemini
+  participant AI as Gemini 3 Flash
   participant B as Bee node
   participant A as Arkiv
   P->>K: PUT /upload/:token (stream, ≤ 60 MB)
   K->>DB: job(status=queued) + event "uploaded"
   R->>DB: SELECT … FOR UPDATE SKIP LOCKED
-  R->>R: ffprobe (duration, rotation) · ffmpeg frames @1fps + 8 keyframes + audio
-  R->>M: adx-media hash frames/ → per-frame dHash + clip signature
+  R->>R: ffprobe (duration, streams) · ffmpeg 3 frames → sharp dHash
   R->>A: query adx.submission where dhashA|B|C bucket matches (all buyers)
   alt Hamming < 10 vs any match
     R->>A: adx.submission(status=rejected) + adx.verification(verdict=reject, reason=duplicate)
   else unique
-    par
-      R->>AI: Groq whisper(audio) → transcript
-    and
-      R->>AI: Claude Haiku(8 keyframes + rubric + challenge) → JSON verdict
-    end
-    opt Claude error or score 40–60
-      R->>AI: Gemini 3 Flash(full video) → second opinion
-    end
+    R->>AI: full clip (video + audio) + rubric + challenge → schema JSON
+    R->>R: rules: liveness, steps, timestamps → accept / reject / review
     R->>R: AES-256-GCM encrypt
     R->>B: POST /bytes (swarm-postage-batch-id) → 64-hex ref
     R->>DB: clip_keys(submission, key) · delete raw
@@ -637,7 +625,7 @@ All inputs validated with zod. Errors use one shape: `{error:{code,message}}`.
 - **Upload server (Hono):** `PUT /upload/:token` verifies HMAC token (claim key, expiry, single use via Neon), streams body to `/tmp/clips/<id>` with a 60 MB cap, inserts job, returns `202 {submissionId}`. CORS for the web origin only. `GET /health`.
 - **Runner:** concurrency 3; `SELECT … FROM jobs WHERE status='queued' ORDER BY created_at FOR UPDATE SKIP LOCKED LIMIT 1`; stages in §11; each stage writes an event; retries 3× with backoff, then `review`.
 - **Arkiv signer queue:** one in-process queue per wallet (platform-worker, verifier) so writes are serialised per nonce; `predictEntityKeys` + idempotency key lookup before retrying uncertain writes.
-- **Dockerfile:** stage 1 `rust:1-slim` builds `adx-media`; stage 2 `node:22-slim` + `apt-get install ffmpeg`; copies binary to `/usr/local/bin`.
+- **Dockerfile:** `node:22-slim` + `apt-get install -y ffmpeg`; single stage, small image.
 
 ### 9.4 `apps/agent`
 - **Loop (every 10 s):** (1) post tasks for unaddressed failure cases (if budget allows), (2) find accepted verdicts for its tasks, (3) for each, run the purchase flow, (4) refresh manifest, (5) re-check licences of clips it holds, drop withdrawn ones.
@@ -658,7 +646,7 @@ All inputs validated with zod. Errors use one shape: `{error:{code,message}}`.
 - `env.ts` — zod-validated env per service; fails fast at boot with the missing names (never values).
 - `events.ts` — event types shared by worker, web and agent.
 
-### 9.6 `packages/db` (Drizzle, §10.2) · 9.7 `crates/adx-media` (§11.3) · 9.8 `infra/*` (done; see §1)
+### 9.6 `packages/db` (Drizzle, §10.2) · 9.7 `infra/*` (done; see §1)
 
 ---
 
@@ -767,43 +755,48 @@ Driver: `@neondatabase/serverless` (HTTP) on Vercel; `pg` pool over the pooler U
 
 ---
 
-## 11. The verification pipeline (the "ML" part)
+## 11. The verification pipeline
+
+We don't train a model. One video-native AI call judges the clip; plain code makes the decision. Decided 6 Nov: **Gemini 3 Flash is the verifier** (it takes video *with* audio in one call). Claude can't take video or audio, so it would need frame extraction + a separate transcript; Claude Haiku is used by the buyer agent for text only.
 
 ### 11.1 Stages and latency budget (30 s clip, ~9 MB)
 | # | Stage | Tool | Budget | Fails to |
 |---|---|---|---|---|
-| 1 | Probe: duration 15–35 s, has video+audio, rotation | ffprobe | 0.2 s | reject (specific reason) |
-| 2 | Frames: 1 fps @ 320 px (hashing) + 8 keyframes @ 768 px (AI) + 16 kHz mono WAV | ffmpeg (one pass, `-filter_complex` split) | 1.5 s | retry |
-| 3 | Hash: per-frame dHash (64-bit), clip signature = frames at 25/50/75 % | `adx-media` (Rust) | 0.05 s | retry |
-| 4 | Dedup: query buckets on Arkiv (cross-buyer), Hamming < 10 on any of 3 → duplicate | Arkiv + `adx-media hamming` | 0.6 s | reject "duplicate" |
-| 5a | Transcript (liveness word) | Groq `whisper-large-v3-turbo` | 1.0 s | Gemini path |
-| 5b | Verdict | Claude Haiku 5.5, 8 images + rubric + challenge, JSON output | 3–6 s | Gemini path |
-| 5c | Fallback / second opinion (error or score 40–60) | Gemini 3 Flash with the full video (Files API) | 6–10 s | `review` |
-| 6 | Encrypt | AES-256-GCM (Node crypto) | 0.1 s | retry |
-| 7 | Store | Bee `/bytes` with our batch | 2–5 s | retry ×3, keep raw |
-| 8 | Publish | Arkiv: submission (worker wallet) ∥ verification (verifier wallet) | ~7 s (parallel) | queue retry |
-| | **Target after upload completes** | | **p50 ≤ 20 s, p95 ≤ 35 s** | |
+| 1 | Probe: duration 15–35 s, has video + audio | ffprobe | 0.2 s | reject (specific reason) |
+| 2 | Fingerprint frames: 3 frames at 25/50/75 % of the clip, 320 px | ffmpeg (one call) | 0.3 s | retry |
+| 3 | Fingerprint: 64-bit dHash per frame | `sharp` (libvips) in TypeScript | < 20 ms | retry |
+| 4 | Dedup: query Arkiv buckets across all buyers; Hamming distance < 10 on any frame → duplicate | Arkiv query + TS popcount | 0.6 s | reject "duplicate" |
+| 5 | Verdict: watch the full clip with audio against the rubric + liveness challenge | **Gemini 3 Flash** (`gemini-3-flash-preview`), inline video ≤ 20 MB, else Files API; `responseSchema` JSON, temperature 0 | 5–10 s | retry once → `review` |
+| 6 | Sanity rules (code) | timestamps inside the clip and ordered; schema valid; liveness both parts | < 1 ms | `review` |
+| 7 | Encrypt | AES-256-GCM (Node crypto) | 0.1 s | retry |
+| 8 | Store | our Bee node `/bytes` with batch `c0cc5436…` | 2–5 s | retry ×3, keep raw |
+| 9 | Publish | Arkiv: submission (worker wallet) ∥ verification (verifier wallet) | ~7 s (parallel) | queue retry |
+| | **Target after upload completes** | | **p50 ≤ 20 s, p95 ≤ 30 s** | |
 
-### 11.2 The verdict prompt contract
-Input: rubric JSON (steps with names, e.g. `grasp_corners`, `first_fold`, `second_fold`, `flatten`), the liveness challenge (word + finger count), the transcript, 8 timestamped keyframes. Output (strict JSON, validated with zod):
+Stages 2–4 run in parallel with stage 5 (dedup doesn't wait for the AI). Worker CPU per clip: well under 1 s; everything else is waiting on the network.
+
+### 11.2 The verdict contract (anti-hallucination by design)
+Gemini gets: the clip (video + audio), the rubric JSON (named steps, e.g. `grasp_corners`, `first_fold`, `second_fold`, `flatten`), the liveness challenge (word + finger count), and the clip duration. It must answer with this schema (enforced by `responseSchema`, validated again with zod):
 ```json
-{ "verdict": "accept|reject|review", "score": 0-100,
-  "liveness": {"word_heard": true, "fingers_seen": 3, "ok": true},
-  "steps": [{"name":"grasp_corners","t":"00:04","ok":true,"why":"both hands pinch two corners"}],
-  "quality": {"lighting":"ok","framing":"top-down","hands_visible":true},
-  "reasons": ["..."] }
+{ "liveness": { "word_heard": "mango|other|not_audible", "fingers_shown": 3, "fingers_visible": true },
+  "steps": [ { "name": "grasp_corners", "status": "done|not_done|not_visible", "t": "00:04", "evidence": "both hands pinch two corners" } ],
+  "quality": { "framing": "top_down|angled|unclear", "hands_visible": true, "lighting": "ok|dark" },
+  "confidence": 0-100 }
 ```
-Rules in code (not in the prompt): liveness fail → reject; any required step missing → reject; score ≥ 70 and all steps ok → accept; 40–69 → Gemini second opinion → still unsure → `review`. Timestamps come from keyframe positions (1 fps granularity; we never claim sub-second precision).
+Why this keeps it honest:
+1. **"not_visible" / "not_audible" are always allowed**, so the model never has to invent an answer.
+2. **Every claimed step needs a timestamp and a short evidence line**; code checks the timestamp is within the clip and steps are in order. An impossible answer → `review`.
+3. **Code decides, not the model:** liveness word ≠ challenge or fingers ≠ challenge → reject; any required step `not_done` → reject; any `not_visible`, confidence < 70, or a failed sanity rule → `review`; otherwise accept. `score` written to Arkiv = confidence.
+4. **Temperature 0 + strict schema**; the prompt forbids guessing and says "if you can't see it, say not_visible".
+5. **Prompt injection:** text shown in the video can't change the outcome, because the verdict is only the schema fields and the rules above.
+6. **Measured, not claimed:** §11.4.
+Timestamps are whole seconds (Gemini samples video at ~1 fps); we never claim sub-second precision.
 
-### 11.3 `adx-media` (Rust)
-```
-adx-media hash <dir-of-pngs>          → {"frames":[{"i":0,"t":0.0,"dhash":"9f3a…"}], "sig":["a","b","c"]}
-adx-media hamming <hexA> <hexB…>      → {"min":3,"idx":1}
-```
-dHash: grayscale → resize 9×8 (Lanczos) → 64 bits from horizontal gradients. Crates: `image`, `clap`, `serde`, `serde_json`, `rayon` (parallel frames). Unit tests: identical image → 0; re-encoded JPEG → < 6; different scene → > 20.
+### 11.3 Fingerprint (dedup) detail
+dHash: grayscale → resize 9×8 → 64 bits from horizontal gradients (`sharp().greyscale().resize(9,8,{fit:'fill'}).raw()`). Stored on Arkiv as three indexed 4-hex buckets (`dhashA/B/C`) plus the full `a|b|c` value. Re-encoded copies stay within a few bits; different scenes differ by > 20 bits. Unit tests cover identical, re-encoded and different images.
 
 ### 11.4 Evaluation (16 clips)
-`eval/manifest.json` lists 16 clips we record ourselves: 8 good folds, 4 incomplete folds, 2 wrong challenge word, 2 re-uploads of a good clip (re-encoded). `pnpm eval` runs the pipeline in dry mode (no Arkiv/Swarm writes) and prints a confusion matrix: false-accept rate, false-reject rate, duplicate catch rate, p50/p95 latency. Results go to README as measured numbers (B-5 honesty).
+`eval/manifest.json`: 8 good folds, 4 incomplete folds, 2 wrong challenge word, 2 re-encoded re-uploads. `pnpm eval` runs the pipeline in dry mode (no Arkiv/Swarm writes) and prints false-accept rate, false-reject rate, duplicate catch rate and p50/p95 latency. Numbers go in the README as measured (B-5).
 
 ---
 
@@ -852,7 +845,7 @@ Device authorization grant (§9.4). Server-side validation: `iss = https://auth.
 | Sybil contributors farming slots | IDKit nullifier `UNIQUE(task, nullifier)`; Selfie Check; cooldown per wallet |
 | Re-uploading the same clip to many buyers | Cross-buyer dHash buckets on public Arkiv + Hamming check |
 | Pre-recorded / fake clips | Random spoken word + finger count per claim, checked by transcript + vision |
-| Prompt injection via the video (text in frame) | Verdict JSON validated by zod; rules decide, not the model's prose; frames only, no tool access for the verifier |
+| Prompt injection via the video (text in frame) | Verdict limited to schema fields, validated with zod; code rules decide; the verifier has no tools |
 | Agent overspending / prompt-jacked agent | Deterministic policy, key only behind `pay.ts`, decision binding, daily cap |
 | Forged approval | Server-side id_token validation (iss/aud/acr/auth_time/nonce/sub allowlist), binding hash |
 | Fake entities with our schema names | Every read filters by our owner wallets |
@@ -862,7 +855,7 @@ Device authorization grant (§9.4). Server-side validation: `iss = https://auth.
 | Open Bee API | No public domain; private network only |
 | Contributor privacy on Hedera | Fresh claimant pseudonym per claim on Arkiv; HashScan shows only account IDs |
 
-**Secrets (names only):** `ARKIV_ACCESS_KEY`, `ARKIV_*_PRIVATE_KEY` (per role), `HEDERA_*_KEY`, `WORLD_SIGNING_KEY`, `WORLD_AGENTPASS_CLIENT_SECRET`, `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`, `GROQ_API_KEY`, `DATABASE_URL`, `UPLOAD_TOKEN_SECRET`, `AGENT_STATUS_TOKEN`, `BEE_PASSWORD`, `BEE_SWARM_KEY_JSON`, `SWARM_FUNDER_PRIVATE_KEY`.
+**Secrets (names only):** `ARKIV_ACCESS_KEY`, `ARKIV_*_PRIVATE_KEY` (per role), `HEDERA_*_KEY`, `WORLD_SIGNING_KEY`, `WORLD_AGENTPASS_CLIENT_SECRET`, `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`, `DATABASE_URL`, `UPLOAD_TOKEN_SECRET`, `AGENT_STATUS_TOKEN`, `BEE_PASSWORD`, `BEE_SWARM_KEY_JSON`, `SWARM_FUNDER_PRIVATE_KEY`.
 
 ---
 
@@ -873,7 +866,7 @@ Device authorization grant (§9.4). Server-side validation: `iss = https://auth.
 | JS on `/record` | < 120 kB gz | `next build` output |
 | Claim (tap → slot reserved) | p50 ≤ 9 s (World + Arkiv write) | events table |
 | Upload 9 MB on venue Wi-Fi | ~5–10 s | XHR progress |
-| Pipeline after upload | p50 ≤ 20 s, p95 ≤ 35 s | events table |
+| Pipeline after upload | p50 ≤ 20 s, p95 ≤ 30 s | events table |
 | x402 purchase (402 → 200) | ≤ 4 s | agent logs (smoke: 2.2 s) |
 | Verifier accuracy | report measured FAR / FRR on 16 clips | `pnpm eval` |
 
@@ -882,7 +875,7 @@ Device authorization grant (§9.4). Server-side validation: `iss = https://auth.
 ## 17. Observability and testing
 - **Events:** every step writes `events(scope, step, ok, ms, data)`; the console and status pages render them live. Worker and agent log JSON lines to Railway.
 - **Unit (Vitest):** guard, policy, crypto, schema round-trip, verdict rules, token signing.
-- **Rust tests:** dHash properties (§11.3).
+- **Fingerprint tests:** dHash properties (§11.3).
 - **Integration scripts:** existing smoke tests + `seed:arkiv`, `outside-agent`, `doctor` (env + connectivity check for every service).
 - **E2E (Playwright):** Chromium with fake camera (`--use-fake-device-for-media-stream`, `--use-file-for-fake-video-capture=eval/sample.y4m`) runs claim (World staging/simulator) → upload → verdict on the preview URL.
 - **Manual gate before each merge to main:** a real iPhone recording ≥ 18 s and an Android recording.
@@ -905,7 +898,8 @@ Device authorization grant (§9.4). Server-side validation: `iss = https://auth.
 | `FACILITATOR_URL` | ✓ | | | |
 | `UPLOAD_TOKEN_SECRET`, `WORKER_PUBLIC_URL` | ✓ | ✓ | | |
 | `BEE_URL`, `SWARM_BATCH_ID` | | ✓ | ✓ | `http://bee.railway.internal:1633` |
-| `ANTHROPIC_API_KEY`, `GROQ_API_KEY`, `GEMINI_API_KEY` | | ✓ | ✓ | |
+| `GEMINI_API_KEY` | | ✓ | | verifier |
+| `ANTHROPIC_API_KEY` | | | ✓ | agent text |
 | `AGENT_STATUS_URL`, `AGENT_STATUS_TOKEN` | ✓ | | ✓ | |
 
 ---
@@ -915,10 +909,10 @@ Device authorization grant (§9.4). Server-side validation: `iss = https://auth.
 ### 19.1 Difficulty ranking (hardest first) and build order
 | Rank | Phase | Difficulty (1–5) | Why it's hard |
 |---|---|---|---|
-| 1 | **P4 Verification pipeline** | 5 | Native media, Rust, three AI providers, Swarm, parallel Arkiv writes, live status |
-| 2 | **P6 Buyer agent + policy + Agent Pass** | 5 | Device flow against a new IdP, id_token validation, policy guarantees, HCS |
-| 3 | **P5 Payments (x402 + hooks + licences)** | 5 | Dynamic pricing in `withX402`, settle-after-handler semantics, per-request payTo |
-| 4 | P2 Identity (embedded wallet + IDKit + Hedera alias) | 4 | WebAuthn PRF across iOS/Android, IDKit 4 RP signing |
+| 1 | **P6 Buyer agent + policy + Agent Pass** | 5 | Device flow against a new IdP, id_token validation, policy guarantees, HCS |
+| 2 | **P5 Payments (x402 + hooks + licences)** | 5 | Dynamic pricing in `withX402`, settle-after-handler semantics, per-request payTo |
+| 3 | P2 Identity (embedded wallet + IDKit + Hedera alias) | 4 | WebAuthn PRF across iOS/Android, IDKit 4 RP signing |
+| 4 | P4 Verification pipeline | 4 | One AI call with strict rules, Swarm, parallel Arkiv writes, live status |
 | 5 | P1 Arkiv core | 3 | Schemas are the foundation; nonce-safe queues |
 | 6 | P3 Capture & upload | 3 | iOS MediaRecorder quirks, resumable upload |
 | 7 | P7 Licences, outside agent, manifest | 3 | Ownership transfer, browser-side delete |
@@ -940,7 +934,7 @@ gantt
   section Parallel tracks
   P2 Identity             :p2, after p1, 120m
   P3 Capture & upload     :p3, after p1, 90m
-  P4 Verification         :p4, after p3, 180m
+  P4 Verification         :p4, after p3, 150m
   section Money
   P5 Payments             :p5, after p4, 120m
   P6 Agent + approvals    :p6, after p5, 150m
@@ -950,7 +944,7 @@ gantt
   P9 Eval + hardening     :p9, after p8, 90m
   P10 Docs + video        :p10, after p9, 150m
 ```
-Feature freeze when P8 ends (target Fri ~23:30–Sat 00:30). If behind schedule, the cut order is: H-6 HCS-14 profile → Gemini fallback → passkey PRF (use device key) → manifest entity → landing animations. **Never cut:** Arkiv reads in UI, x402 autonomous payment, Agent Pass denied path, IDKit duplicate path, Swarm with our batch, docs.
+Feature freeze when P8 ends (target Fri ~23:30–Sat 00:30). If behind schedule, the cut order is: H-6 HCS-14 profile → passkey PRF (use device key) → manifest entity → landing animations. **Never cut:** Arkiv reads in UI, x402 autonomous payment, Agent Pass denied path, IDKit duplicate path, Swarm with our batch, docs.
 
 ---
 
@@ -1004,20 +998,18 @@ Feature freeze when P8 ends (target Fri ~23:30–Sat 00:30). If behind schedule,
 
 **P3.3 Upload UX** — XHR PUT with progress, auto-retry on network error (3×), then redirect to `/submissions/[id]`. **You'll see:** a real progress bar, then the status page.
 
-### P4 — Verification pipeline (difficulty 5) · ~3 h
-**P4.0 Spikes first (20 min)** 🧪 — (a) confirm our Bee node shows batch `c0cc5436…` as usable (`GET /stamps` from inside Railway: run a one-off check in the worker at boot that logs `GET http://bee.railway.internal:1633/stamps/<id>` usable/utilization); (b) Claude Haiku 5.5 accepts 8 images in one message within latency; (c) Groq whisper on a 30 s WAV. Record results in the session logs.
+### P4 — Verification pipeline (difficulty 4) · ~2.5 h
+**P4.0 Spikes first (15 min)** 🧪 — (a) our Bee node reports batch `c0cc5436…` usable (worker boot check logs `GET http://bee.railway.internal:1633/stamps/<id>`); (b) Gemini 3 Flash on a 30 s, 9 MB clip inline with `responseSchema`: latency + whether it hears the word; (c) inline size limit vs Files API. Record results in the session logs.
 
-**P4.1 Media stage** — `probe.ts` (ffprobe JSON), `frames.ts` (single ffmpeg pass → `hash/*.png` at 1 fps 320 px, `key/*.jpg` 8 evenly spaced at 768 px, `audio.wav` 16 kHz mono). **Acceptance:** stage outputs exist for a sample clip in < 2 s.
+**P4.1 Media stage** — `probe.ts` (ffprobe JSON: duration, streams), `frames.ts` (one ffmpeg call → 3 PNGs at 25/50/75 %, 320 px). **Acceptance:** outputs for a sample clip in < 0.5 s.
 
-**P4.2 Rust `adx-media`** — crate per §11.3 with tests; worker Dockerfile multi-stage build; `hash.ts` calls the binary via `execFile` and parses JSON. **Acceptance:** `cargo test` passes; Railway build succeeds.
+**P4.2 Fingerprint + dedup** — `fingerprint.ts` (sharp dHash + tests), `dedup.ts` (query `submissionsByBucket` for the 3 buckets with `or`, Hamming in TS). **Acceptance (T-VER-1):** a re-encoded copy of an accepted clip is rejected with the matching submission key.
 
-**P4.3 Dedup** — `dedup.ts`: query `submissionsByBucket` for each of the 3 buckets (or-combined), Hamming via `adx-media hamming`; duplicate → reject path. **Acceptance (T-VER-1):** uploading a re-encoded copy of an accepted clip is rejected with the matching submission key.
+**P4.3 Gemini verdict** — `verify.ts` (`@google/genai`, inline video or Files API, `responseSchema`, temperature 0, one retry), `rules.ts` (decision rules from §11.2, unit-tested with fixture JSON including bad timestamps and not_visible cases). **Acceptance (T-VER-2):** good fold → accept with ≥ 3 timestamped steps; wrong word → reject; ambiguous → review.
 
-**P4.4 AI verdict** — `transcribe.ts` (Groq), `verify.ts` (Claude, prompt contract §11.2, zod parse, retries), `fallback.ts` (Gemini Files API), `rules.ts` (decision rules, unit-tested). **Acceptance (T-VER-2):** good fold → accept with ≥ 3 timestamped steps; wrong word → reject (liveness); ambiguous → review.
+**P4.4 Encrypt + Swarm** — `encrypt.ts`, `swarm.ts` (`POST /bytes` with the batch header), `clip_keys` row, delete raw. **Acceptance (T-SWM-1):** ref downloads from the public gateway and decrypts with the stored key to the same sha256.
 
-**P4.5 Encrypt + Swarm** — `encrypt.ts`, `swarm.ts` (`POST /bytes` with batch header), `clip_keys` row, delete raw. **Acceptance (T-SWM-1):** ref downloads from the public gateway and decrypts with the stored key to the same sha256.
-
-**P4.6 Publish + status** — `publish.ts`: submission (worker wallet) ∥ verification (verifier wallet) via queues; patch claim → `submitted`; events for every stage; `/submissions/[key]` SSE page with step list and verdict card (timestamps, score, Swarm + Arkiv links). **Acceptance:** phone sees each stage tick live; entities visible on the Arkiv explorer. **You'll see:** the whole pipeline animate on the phone in ~20 s.
+**P4.5 Publish + live status** — `publish.ts`: submission (worker wallet) ∥ verification (verifier wallet) through the signer queues; patch claim → `submitted`; an event per stage; `/submissions/[key]` SSE page with step list and verdict card (timestamps, evidence lines, Swarm + Arkiv links). **Acceptance:** phone sees each stage tick live; entities visible on the Arkiv explorer. **You'll see:** the whole check animate on the phone in ~20 s.
 
 ### P5 — Payments (difficulty 5) · ~2 h
 **P5.1 Endpoint** 🧪 — `/api/x402/clip/[key]` with `withX402`; per-request price from the task, `payTo` per §12. 404 for non-accepted. Test with `scripts/x402-smoke.ts` pointed at the deployed route. **Acceptance (T-PAY-1):** 402 → paid → 200 on the preview URL; tx on HashScan.
@@ -1075,7 +1067,7 @@ Record the 16 clips, `pnpm eval`, fix what fails, security review of routes (Tra
 | Per-request payTo rejected | merchant + HTS transfer |
 | PRF unavailable on a phone | device-bound key fallback |
 | Venue network fails during live demo | pre-recorded full run |
-| AI provider outage | Claude → Gemini → `review` |
+| AI provider outage | Gemini retry → `review` (human queue) |
 
 ## 22. References
 **Local paths**
@@ -1093,5 +1085,5 @@ Record the 16 clips, `pnpm eval`, fix what fails, security review of routes (Tra
 - Swarm: https://docs.ethswarm.org · bee-js https://bee-js.ethswarm.org · PostageStamp (Sepolia) `0xcdfdC3752caaA826fE62531E0000C40546eC56A6`
 - Hedera x402: https://docs.hedera.com/solutions/ai/x402 · facilitators https://docs.hedera.com/solutions/ai/x402/facilitators · x402 repo https://github.com/x402-foundation/x402 · Agent Kit https://docs.hedera.com/solutions/ai/agent-kit · Mirror Node https://docs.hedera.com/reference/rest-api · HashScan https://hashscan.io/testnet
 - World: IDKit https://docs.world.org/world-id/idkit/integrate · credentials https://docs.world.org/world-id/idkit/credentials · Agent Pass (World IdP) https://auth.world.org/docs · coding-agent setup https://auth.world.org/docs/guides/coding-agent-setup · Simulator https://simulator.worldcoin.org
-- AI: Anthropic (model `claude-haiku-5-5`), Gemini (`gemini-3-flash-preview`), Groq (`whisper-large-v3-turbo`)
+- AI: Gemini (`gemini-3-flash-preview`, clip verifier), Anthropic (`claude-haiku-5-5`, agent text)
 - Design: shadcn/ui, Magic UI, Airship https://www.airship.design (`npx @airshiplabs/cli --target 3000`)

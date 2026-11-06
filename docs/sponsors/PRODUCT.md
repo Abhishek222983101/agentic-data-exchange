@@ -21,7 +21,7 @@ A robot company's AI agent buys exactly the demonstrations its model fails on, o
 1. **Post.** The buyer agent turns a failure case into a task ("fold a towel, top-down, 3 attempts") with N slots, a reward and a deadline. It's written to Arkiv as `adx.task`, expiring at the deadline.
 2. **Claim.** A contributor opens the task on their phone and proves they're a unique human with World ID (IDKit, Selfie Check). One human, one slot per task. The claim is an `adx.claim` entity that expires when the claim window closes.
 3. **Record.** The phone records the clip in the browser, with a random spoken word and finger count as a liveness challenge. The clip is encrypted on our side and uploaded to Swarm through our own Bee node.
-4. **Verify.** The worker checks the clip: duplicate check (perceptual hash against every submission on Arkiv, across all buyers), then AI review (Claude Haiku on extracted frames, Gemini as fallback) against the task rubric with timestamped evidence. The verdict is an `adx.verification` entity signed by the verifier wallet.
+4. **Verify.** The worker checks the clip: duplicate check (perceptual hash against every submission on Arkiv, across all buyers), then AI review (Gemini 3 Flash watches the full clip with sound) against the task rubric with timestamped evidence; plain code makes the final accept/reject/review decision. The verdict is an `adx.verification` entity signed by the verifier wallet.
 5. **Pay.** The buyer agent finds the paid endpoint and pays it over x402 on Hedera, with no human approving, within its spending policy. Above the threshold it pauses and asks its human to approve with World ID Agent Pass (Orb + fresh face check). After settlement the decryption key is released, and an `adx.receipt` entity links the HashScan transaction.
 6. **Own.** The contributor holds an `adx.licence` entity for their clip. Before using a clip, the buyer agent checks that the licence is still live. If the contributor withdraws it, the clip drops out of the dataset, and anyone can see that on Arkiv.
 
@@ -38,7 +38,7 @@ A robot company's AI agent buys exactly the demonstrations its model fails on, o
 ## In scope for the hackathon
 - Web app (mobile-first, installable): task board, claim, record, my earnings, my licences
 - Buyer console: budget and policy, live tasks, spend log, approvals
-- Buyer agent (Node, Claude Haiku): posts tasks, discovers and pays the x402 endpoint, checks licences
+- Buyer agent (Node, Claude Haiku for task text): posts tasks, discovers and pays the x402 endpoint, checks licences
 - Worker: duplicate check, AI verification, Swarm upload, Arkiv writes
 - Outside-agent proof: a `curl` / CLI query against Arkiv that shows the same state as our app
 - All sponsor deliverables: `/arkiv/*.md`, README with tx IDs, World debrief, AI usage
