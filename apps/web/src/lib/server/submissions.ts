@@ -2,6 +2,7 @@
 // no file path, no keys. The id is a random UUID the uploader received.
 import "server-only"
 import { asc, claimsPrivate, db, eq, events, jobs } from "@adx/db"
+import { claimByKey } from "@adx/shared/arkiv"
 import { decodeChallenge } from "@adx/shared/challenge"
 import type { PipelineEvent } from "@adx/shared/events"
 
@@ -51,7 +52,7 @@ export async function submissionView(id: string): Promise<SubmissionView | null>
     status: job.status,
     bytes: job.bytes,
     receivedAt: job.createdAt.toISOString(),
-    challenge: claim?.challenge ? decodeChallenge(claim.challenge) : null,
+    challenge: claim?.challenge ? decodeChallenge(claim.challenge) : await challengeFromArkiv(job.claimKey),
     events: evs.map((e) => ({
       id: e.id,
       step: e.step as PipelineEvent["step"],
@@ -61,4 +62,11 @@ export async function submissionView(id: string): Promise<SubmissionView | null>
       data: (e.data ?? undefined) as PipelineEvent["data"],
     })),
   }
+}
+
+/** The challenge is public on the Arkiv claim, so it survives even if the private row was released. */
+async function challengeFromArkiv(claimKey: string) {
+  if (!/^0x[0-9a-f]{64}$/i.test(claimKey)) return null
+  const c = await claimByKey(claimKey as `0x${string}`).catch(() => null)
+  return c ? decodeChallenge(c.challenge) : null
 }

@@ -158,7 +158,11 @@ ok(
 
 // Neon holds the private link; Arkiv never sees the nullifier or wallet.
 const rows = await db().select().from(claimsPrivate).where(eq(claimsPrivate.taskKey, taskKey))
-ok("Neon has 2 private claim rows for the task", rows.length === 2)
+ok(
+  "Neon keeps 2 live claims + 1 released (history kept on start over)",
+  rows.filter((r) => r.status !== "released").length === 2 &&
+    rows.filter((r) => r.status === "released").length === 1,
+)
 await db().delete(claimsPrivate).where(eq(claimsPrivate.taskKey, taskKey))
 
 console.log(failures ? `\n${failures} failure(s)` : "\nall claim checks passed")

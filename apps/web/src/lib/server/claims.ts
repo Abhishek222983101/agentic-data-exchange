@@ -84,9 +84,13 @@ export async function claimSlot(
     const restarting = Boolean(prior && input.restart && restartAllowed())
     if (prior && !lapsed && !restarting) return { kind: "existing" as const, row: prior }
     if (prior && (lapsed || restarting)) {
-      // Release this person's own previous slot (and any unused upload pass) before taking a fresh one.
+      // Release this person's own previous slot, keeping the record (its clip may already be uploaded).
+      // The nullifier is suffixed so UNIQUE(task, nullifier) admits the fresh claim.
       if (prior.claimKey) await tx.delete(uploadTokens).where(eq(uploadTokens.claimKey, prior.claimKey))
-      await tx.delete(claimsPrivate).where(eq(claimsPrivate.id, prior.id))
+      await tx
+        .update(claimsPrivate)
+        .set({ status: "released", nullifier: `${prior.nullifier}:released:${prior.id}` })
+        .where(eq(claimsPrivate.id, prior.id))
     }
     const taken = await tx.execute(
       sql`select count(*)::int as n from claims_private where task_key = ${taskKey} and ${sql.raw(LIVE_SQL)}`,
