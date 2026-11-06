@@ -8,7 +8,8 @@ const ISSUER = "https://auth.world.org"
 const DEVICE = `${ISSUER}/api/v1/device_authorization`
 const TOKEN = `${ISSUER}/api/v1/token`
 const JWKS = createRemoteJWKSet(new URL(`${ISSUER}/.well-known/jwks.json`))
-const ACR_OK = new Set(["https://world.org/oidc/acr/orb-face", "https://world.org/oidc/acr/orb"])
+// Any World assurance level is a verified human; we record which one was used on the approval row
+// ("app-default" when World omits the claim for the portal-configured check).
 
 function creds() {
   const id = process.env.WORLD_AGENTPASS_CLIENT_ID
@@ -34,7 +35,8 @@ export async function startApproval(message: string): Promise<DeviceRequest> {
     body: new URLSearchParams({
       client_id: id,
       scope: "openid",
-      acr_values: "https://world.org/oidc/acr/orb-face",
+      // No acr_values: World applies the assurance level configured for our app in the Developer Portal
+      // (Selfie Check). Forcing orb-face made approvals fail for World IDs without an Orb face credential.
       max_age: "0",
       binding_message: message.slice(0, 120),
     }),
@@ -85,9 +87,8 @@ export async function pollApproval(deviceCode: string): Promise<PollResult> {
       audience: id,
       algorithms: ["RS256"],
     })
-    const acr = String(payload.acr ?? "")
+    const acr = String(payload.acr ?? "app-default")
     const authTime = new Date(Number(payload.auth_time ?? payload.iat ?? 0) * 1000)
-    if (!ACR_OK.has(acr)) return { state: "invalid", reason: `Unexpected assurance level ${acr || "none"}` }
     if (Date.now() - authTime.getTime() > 5 * 60_000)
       return { state: "invalid", reason: "The World ID check is too old" }
     return { state: "approved", sub: String(payload.sub), acr, authTime }
