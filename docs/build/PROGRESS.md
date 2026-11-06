@@ -220,10 +220,12 @@ Shared pieces: `PipelineSteps` (live check list, screen-reader announced), `Verd
 - After an early rejection the worker closes the connection, so a half-sent upload can't confuse the next request.
 - CORS only allows the Paradigm site.
 
-**Manual steps for the team**
-1. `bash scripts/railway-worker-env.sh`: gives the worker its secrets (names only printed). Then `curl https://worker-production-e76e.up.railway.app/health`.
-2. `bash scripts/vercel-env.sh`: gives the website its secrets, including the worker URL.
-3. On a real iPhone and an Android phone: claim → record ≥ 18 s → submit.
+**Live deployment (done 17:20)**
+- Worker secrets set on Railway; the worker is up, reaches our Bee node privately, and our Swarm batch is **usable** (PROOFS SWM-05).
+- Website secrets set on Vercel and redeployed: https://adx-paradigm.vercel.app/tasks shows the live Arkiv task; World ID signing works.
+- Same tests rerun against production: `test:upload` 11/11 on the Railway worker, `test:record` 9/9 from the live site to the live worker.
+
+**Still manual:** on a real iPhone and an Android phone: claim with World App (or the staging simulator) → record ≥ 18 s → submit; then claim again with the same World ID.
 
 ---
 

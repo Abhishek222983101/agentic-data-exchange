@@ -40,7 +40,7 @@ Every phase ends with `pnpm verify` (typecheck + lint + unit tests + production 
 | P3.2 Worker upload server | valid → 202; reused → 409; 70 MB → 413; bad token 401; wrong type / not video 415; CORS | Passed (`pnpm test:upload`, 11/11) |
 | P3.3 Upload UX | XHR progress, 3 retries, redirect to status page | Passed (`pnpm test:record`, 9/9 end to end) |
 | P-UI All screens | every route 200, sample regions badged, real data where it exists | Passed (local prod build, screenshots) |
-| P1.5 First reads | `/tasks` shows the seeded task; `/explorer` returns the same key | Passed locally; live URL needs Vercel env (`scripts/vercel-env.sh`) |
+| P1.5 First reads | `/tasks` shows the seeded task; `/explorer` returns the same key | Passed (live URL) |
 
 ## Acceptance checklist
 Status: **Not run** · **Passed** · **Failed**. Only mark Passed after actually running it.

@@ -26,6 +26,7 @@ Screenshots are captured clean (no keys or secrets visible) into `docs/proofs/`,
 | SWM-02 | 06 Nov 09:05 | Sepolia ETH → sBZZ on Uniswap v3 (self-serve, no faucet exists) | [tx 0x1b1d…f2](https://sepolia.etherscan.io/tx/0x1b1d97ee93a32a3479e03b65e8309932e7cc43aad262a4b514ce5d4892b3c3f2), [tx 0x0a5e…8d](https://sepolia.etherscan.io/tx/0x0a5ed87f121be9ec1aa4869be2b43ae5d9a5d3f5107c71f0f1d2b57b2adf2a8d), [tx 0xf039…b1](https://sepolia.etherscan.io/tx/0xf03933c4814c73e8c37e19b75d39bd875c8f9efa0f32db7e94ab605d5b282ab1) · `scripts/swarm-fund.ts` |
 | SWM-03 | 06 Nov 09:30 | Our Bee 2.8.3 node's chequebook deployed (node wallet = our funding wallet) | node [0xCEfca762…F694](https://sepolia.etherscan.io/address/0xCEfca762D3Cdc231B20220dA681021b562afF694) · chequebook [0x6f045e3A…91bB](https://sepolia.etherscan.io/address/0x6f045e3A46048c77F3555AA87b78CD665Dd891bB) · `infra/bee/` |
 | SWM-04 | 06 Nov 09:40 | **Our own postage batch** bought on-chain (depth 20, ~2.9 days, immutable) | batch `c0cc54366a3a337d4a84ab78af74a26440d122eb3af5952d65734d8221332665` · [tx 0x515d…d1](https://sepolia.etherscan.io/tx/0x515df5c447f6c91d81c8391019f3a3702cb0a47b08968867ea43de5c2ee520d1) · `scripts/swarm-buy-batch.ts` |
+| SWM-05 | 06 Nov 17:20 | Our worker on Railway reaches our Bee 2.8.3 node over the private network and the node reports **our batch usable** (TTL ≈ 63 h) | `GET https://worker-production-e76e.up.railway.app/health` → `{"bee":"ok","beeVersion":"2.8.3-8e9bb914","batchUsable":true}` |
 
 ## World ID
 | ID | When (IST) | What | Proof |
