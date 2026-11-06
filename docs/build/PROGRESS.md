@@ -12,8 +12,8 @@
 | Phase | What it gives us | Status |
 |---|---|---|
 | P0 Foundation | Monorepo, env checks, private database, design system + app shell | ✅ done |
-| P1 Arkiv core | Public data layer: 8 record types, safety guard, write queue, seed task, live task board + explorer | ⏳ next |
-| P-UI | Every screen in final design, clickable on a phone | ⬜ |
+| P1 Arkiv core | Public data layer: 8 record types, safety guard, write queue, seed task, live task board + explorer | ✅ done |
+| P-UI | Every screen in final design, clickable on a phone | ⏳ next |
 | P2 Identity | Embedded wallet (passkey), World ID claim, one-human-per-slot | ⬜ |
 | P3 Capture & upload | In-browser camera recorder, worker upload server on Railway | ⬜ |
 
@@ -90,12 +90,58 @@ Every task, verdict, receipt and licence is a public record on **Arkiv**, so any
 - Arkiv text fields are capped at **128 bytes** (found in the SDK source), so the full task rubric is stored as a `bytes` field on the task entity *and* on Swarm. The task board then never depends on a gateway being up.
 - Upload tokens are stored as **hashes** only: a database leak can't be replayed as uploads.
 
+### P1 Arkiv core ✅ (Fri 6 Nov, 15:45–16:15 IST)
+
+**Goal:** the public data layer every other phase writes to, and the first real screens.
+
+**Concepts**
+- **8 record types** on Arkiv: verifier listing, task, claim, submission, verification (AI verdict), receipt (payment), licence, manifest (dataset summary). Each has typed fields; some are *indexed* so they can be searched.
+- **Expiry is a feature:** a task disappears at its deadline, a claim after 2 h if unused, a licence after 90 days. Nobody has to clean up.
+- **One wallet per role:** the website signs claims, the worker signs submissions, the verifier signs verdicts and receipts, the buyer agent signs tasks. Reads only trust these four owners.
+- **The write guard:** before anything goes public it's scanned for things that look like secrets (private keys, World ID nullifiers, API keys, emails, phone numbers, encrypted refs). A match blocks the write.
+- **The write queue:** one wallet can only send one transaction at a time without clashing nonces, so writes per wallet go in a line, with retries. If the network times out after accepting a write, we look the record up at its *predicted* key rather than writing it twice.
+
+**What was built**
+| Piece | File(s) | Plain words |
+|---|---|---|
+| Schemas | `packages/shared/src/arkiv/schemas.ts` | The 8 record types; namespace from `ARKIV_NS` so a testnet reset is one variable |
+| Guard | `packages/shared/src/arkiv/guard.ts` | Blocks secret-looking data from becoming public; error messages never repeat the value |
+| Queue + writer | `queue.ts`, `writer.ts` | The only way the code writes to Arkiv: guard → per-wallet line → retry/reconcile |
+| Named queries | `queries.ts` | Every read the app makes, by name (open tasks, task by key, active claims, duplicate check, live verifiers, totals) |
+| Seed | `scripts/seed-arkiv.ts` → `pnpm seed:arkiv` | Publishes the verifier listing and the towel task; rubric goes on Swarm too |
+| Roundtrip test | `scripts/arkiv-roundtrip.ts` | Live test of all 8 types, the guard, and 10 parallel writes |
+| Task board | `apps/web/src/app/tasks/page.tsx` | Open tasks read straight from Arkiv, refreshed every ~5 s |
+| Task detail | `apps/web/src/app/tasks/[key]/page.tsx` | Summary, numbered steps, setup tips, slots, countdown, links to the Arkiv record and the rubric on Swarm |
+| Explorer | `apps/web/src/app/explorer/page.tsx` | Judges pick a query, see the exact SDK code and the live JSON, and click through to the Arkiv explorer |
+
+**Design notes**
+- The **slot rail** (small squares, filled in orange as people claim) echoes the logo: one square = one verified human. It shows scarcity at a glance.
+- The claim button sits **docked above the bottom bar** on phones (thumb reach), and in a sidebar on desktop.
+- If Arkiv is slow, pages say "Syncing with Arkiv…" instead of showing fake data.
+
+**Proof it works**
+- `pnpm arkiv:roundtrip`: 8/8 types created and read back, guard refusal ✓, 10/10 parallel writes on one wallet ✓.
+- `pnpm seed:arkiv`: verifier `0x1ff9…64cb` and task `0x59f8…a69e` live on Rabdi (PROOFS ARK-03).
+- Production build: `/tasks` and `/tasks/[key]` render the live task; `/explorer` returns the same key.
+
+**Security pass (P1)**
+- Scanned the whole build output for every secret value in `.env`. Found the Arkiv access key in Next's *server-side* fetch cache (the RPC URL contains it). Fixed by marking Arkiv RPC calls `no-store`; rescanned after live requests: 0 files contain any secret.
+- Page data modules import `server-only`, so they can't be pulled into the browser bundle.
+- User input (task key in the URL, explorer query name) is validated against a strict pattern or an allow-list before use.
+- Arkiv error details are logged server-side only; users see a plain message.
+
+**Known limits / next**
+- Each Arkiv write takes ~6.5 s (it waits for confirmation). The claim screen will show progress so this feels intentional.
+- The live URL needs the server env vars on Vercel. **One-time step for Abhishek:** run `bash scripts/vercel-env.sh` (copies names from `.env` to Vercel without printing values). Until then the live board says "Syncing with Arkiv…" rather than breaking.
+
 ---
 
 ## How to check things yourself
 ```bash
 pnpm run doctor     # every outside service ✓/✗
 pnpm test           # unit tests (guard, tokens, crypto, challenge, rubric)
+pnpm seed:arkiv     # publish the verifier listing + demo task (idempotent)
+ARKIV_NS=adx-test pnpm arkiv:roundtrip   # live test of all 8 record types
 pnpm verify         # the full gate that runs before every push to main
 pnpm dev            # run the website locally on http://localhost:3000
 ```

@@ -21,7 +21,8 @@
     "db:push": "pnpm --filter @adx/db exec drizzle-kit push",
     "arkiv:wallets": "tsx --env-file=.env scripts/arkiv-wallets.ts",
     "seed:arkiv": "tsx --env-file=.env scripts/seed-arkiv.ts",
-    "verify": "pnpm typecheck && pnpm lint && pnpm test && pnpm build"
+    "verify": "pnpm typecheck && pnpm lint && pnpm test && pnpm build",
+    "arkiv:roundtrip": "tsx --env-file=.env scripts/arkiv-roundtrip.ts"
   },
   "dependencies": {
     "@adx/db": "workspace:^",

@@ -2,11 +2,11 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { Suspense } from "react"
 import { cn } from "@/lib/utils"
 import { DESKTOP_EXTRA, PRIMARY_NAV } from "./nav-items"
 
-export function DesktopNav() {
-  const path = usePathname()
+function DesktopNavInner({ path }: { path: string }) {
   return (
     <nav aria-label="Main" className="hidden md:flex items-center gap-1">
       {[...PRIMARY_NAV, ...DESKTOP_EXTRA].map((item) => {
@@ -29,8 +29,7 @@ export function DesktopNav() {
   )
 }
 
-export function BottomNav() {
-  const path = usePathname()
+function BottomNavInner({ path }: { path: string }) {
   // The recorder is full-screen: no nav over the camera.
   if (/^\/record\/.+/.test(path)) return null
   return (
@@ -66,5 +65,26 @@ export function BottomNav() {
         })}
       </ul>
     </nav>
+  )
+}
+
+function WithPath({ render }: { render: (path: string) => React.ReactNode }) {
+  return <>{render(usePathname())}</>
+}
+
+/** usePathname is request data: render a neutral nav in the static shell, highlight once it resolves. */
+export function DesktopNav() {
+  return (
+    <Suspense fallback={<DesktopNavInner path="" />}>
+      <WithPath render={(p) => <DesktopNavInner path={p} />} />
+    </Suspense>
+  )
+}
+
+export function BottomNav() {
+  return (
+    <Suspense fallback={<BottomNavInner path="" />}>
+      <WithPath render={(p) => <BottomNavInner path={p} />} />
+    </Suspense>
   )
 }

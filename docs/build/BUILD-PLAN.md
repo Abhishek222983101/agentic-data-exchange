@@ -28,13 +28,18 @@ Every phase ends with `pnpm verify` (typecheck + lint + unit tests + production 
 | P0.2 Env validation + doctor | `pnpm run doctor` green table | Passed: 14/14 live checks |
 | P0.3 Database | 9 tables in Neon | Passed (`drizzle-kit push`) |
 | P0.4 Tokens + shell | shell in light + dark at 393 px, all nav routes 200 | Passed (screenshots) |
+| P1.1 Schemas + clients | create + read each of 8 schemas on Rabdi (`adx-test`) | Passed (`pnpm arkiv:roundtrip`) |
+| P1.2 Write guard | 13 guard unit tests; 64-hex title refused live | Passed |
+| P1.3 Signer queue | 10 parallel creates on one signer, no nonce errors | Passed (10/10, 65 s) |
+| P1.4 Queries + seed | `pnpm seed:arkiv` prints keys + links | Passed (ARK-03) |
+| P1.5 First reads | `/tasks` shows the seeded task; `/explorer` returns the same key | Passed locally; live URL needs Vercel env (`scripts/vercel-env.sh`) |
 
 ## Acceptance checklist
 Status: **Not run** · **Passed** · **Failed**. Only mark Passed after actually running it.
 
 | ID | Check | Status |
 |---|---|---|
-| A1 | Task board reads open tasks from Arkiv (owner-filtered) | Not run |
+| A1 | Task board reads open tasks from Arkiv (owner-filtered) | Passed (local prod build) |
 | A2 | Claim with World ID succeeds; nullifier stored privately | Not run |
 | A3 | Second claim by the same human rejected | Not run |
 | A4 | Cancelled World ID verification takes no slot | Not run |

@@ -9,7 +9,9 @@
     "./crypto": "./src/crypto.ts",
     "./arkiv": "./src/arkiv/index.ts",
     "./challenge": "./src/challenge.ts",
-    "./upload-token": "./src/upload-token.ts"
+    "./upload-token": "./src/upload-token.ts",
+    "./rubric": "./src/rubric.ts",
+    "./swarm": "./src/swarm.ts"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",

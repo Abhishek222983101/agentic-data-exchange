@@ -15,7 +15,8 @@ let pub: ReturnType<typeof makePublic> | undefined
 function makePublic() {
   return createPublicClient({
     chain: chain(),
-    transport: http(undefined, { timeout: 20_000, retryCount: 2 }),
+    // no-store: the RPC URL carries our access key; never let a framework fetch cache persist it.
+    transport: http(undefined, { timeout: 20_000, retryCount: 2, fetchOptions: { cache: "no-store" } }),
   })
 }
 /** Shared read client (uses our access key for rate limits). */
@@ -31,7 +32,7 @@ function makeWallet(role: Role) {
   if (!key || !isHex(key) || key.length !== 66) throw new Error(`${name} is not set`)
   return createWalletClient({
     chain: chain(),
-    transport: http(undefined, { timeout: 30_000, retryCount: 0 }),
+    transport: http(undefined, { timeout: 30_000, retryCount: 0, fetchOptions: { cache: "no-store" } }),
     account: privateKeyToAccount(key),
   })
 }

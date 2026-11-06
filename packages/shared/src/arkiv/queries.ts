@@ -169,7 +169,7 @@ export async function liveVerifiers(skill: string, pub: ArkivPublic = arkivPubli
     endpoint: r.endpoint.value,
     payTo: r.payTo.value,
     model: r.model.value,
-    expiresAt: r.$expiresAt,
+    expiresAtBlock: Number(r.$expiresAt),
   }))
 }
 
