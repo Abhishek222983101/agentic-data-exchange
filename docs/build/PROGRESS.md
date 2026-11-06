@@ -15,7 +15,10 @@
 | P1 Arkiv core | Public data layer: 8 record types, safety guard, write queue, seed task, live task board + explorer | ✅ done |
 | P-UI | Every screen in final design, clickable on a phone | ✅ done |
 | P2 Identity | Embedded wallet (passkey), World ID claim, one-human-per-slot | ✅ done (real-phone World ID test pending) |
-| P3 Capture & upload | In-browser camera recorder, worker upload server on Railway | ✅ done (real-phone test pending) |
+| P3 Capture & upload | In-browser camera recorder, worker upload server on Railway | ✅ done (tested on a real Android phone) |
+| P4 AI check + Swarm + Arkiv verdict | Gemini watches the clip, code decides, clip encrypted to Swarm, verdict on Arkiv, duplicates caught, reputation | ✅ done |
+| P5 x402 payments | Agent pays the contributor directly in USDC; key, receipt and licence only after settlement | ✅ done |
+| P6 Buyer agent + Agent Pass | Spending rules, automatic payments, human approval above the limit, Hedera spend log | ✅ done (phone approve/deny to film) |
 
 **Shipping rule:** nothing reaches `main` unless `pnpm verify` passes (typecheck + lint + unit tests + production build). Each phase ends with one push to `main`, which Vercel deploys.
 
@@ -227,6 +230,37 @@ Shared pieces: `PipelineSteps` (live check list, screen-reader announced), `Verd
 
 **Still manual:** on a real iPhone and an Android phone: claim with World App (or the staging simulator) → record ≥ 18 s → submit; then claim again with the same World ID.
 
+### P4 AI check, Swarm storage, verdict on Arkiv ✅ (Fri 6 Nov, 23:00 – Sat 00:00 IST)
+
+**Concepts**
+- **The AI watches, the code decides.** Gemini 3 Flash watches the clip *with sound* and fills a strict form: which word it heard, how many fingers, and for each step done / not done / not visible, with the second it happened. Plain code then decides: wrong word or fingers → rejected; a step not done → rejected; anything unclear → a person checks; otherwise accepted. The AI is never told the expected word, so it can't be nudged into saying "yes".
+- **Duplicates across all buyers.** Each clip gets a fingerprint (3 frames turned into 64-bit hashes). We search Arkiv for clips with similar fingerprints, from any buyer, so the same video can't be sold twice.
+- **Private until paid.** The clip is encrypted (AES-256) before it goes to our Swarm node; only the encrypted bytes are stored. The key stays in our private database until someone pays.
+- **Reputation.** Each verified person gets 10 free checks; an accepted clip earns its check back. 5 rejections in a row, or under 40 % accepted after 6 clips, and that World ID can't claim anymore. Keyed by World ID, so new wallets don't reset it (answers the Arkiv team's "garbage data" concern).
+
+**Proof:** `pnpm test:pipeline` ran every stage live (verdict in ~19 s), published the submission + verdict to Arkiv (PROOFS ARK-05), downloaded the Swarm copy and decrypted it back to the original, and caught the same clip uploaded again as a duplicate.
+
+### P5 x402 payments ✅ (Sat 00:00 – 00:15 IST)
+
+**Concepts**
+- **x402** turns "buy this clip" into one HTTP request: the server answers *402 Payment Required* with a price; the agent pays USDC on Hedera; the server answers again with the clip's key.
+- **The contributor is paid directly**: the payee in the 402 is the contributor's own Hedera account (created automatically when they first claimed).
+- **Nothing before settlement**: the key is only sent after Hedera confirms the payment, and the receipt + licence are only written after that. A clip that isn't accepted never gets a price (404). A clip can't be sold twice (409).
+- **The licence belongs to the contributor**: it's created on Arkiv and then ownership moves to their wallet, so only they can withdraw it.
+
+**Proof:** `pnpm test:x402` with real testnet USDC: settled in ~6 s, key decrypted the clip from Swarm, receipt `mode: live` + contributor-owned licence on Arkiv (PROOFS HED-04, ARK-06). One of four runs hit a silent facilitator failure (no money moved); the agent now retries once.
+
+### P6 Buyer agent, spending rules, World Agent Pass ✅ (Sat 00:15 – 00:45 IST)
+
+**Concepts**
+- **The agent pays on its own, but only within rules written in code**: up to 5 USDC per clip automatically, never above 10, at most 20 a day. The AI part (Claude Haiku) only writes a one-line explanation for the human; it can't move money.
+- **Above the limit, a human must approve with World ID** (World Agent Pass). The agent opens an approval; the console shows a QR; the human scans it and confirms on their phone. The approval is tied to that exact amount, payee and clip, and must be fresh (≤ 5 minutes). Declined or expired → nothing is paid.
+- **Every decision is public on Hedera** (Consensus Service topic `0.0.11343565`), so anyone can audit what the agent spent and why.
+
+**Proof:** `pnpm test:agent` ran the real agent: a 0.05 USDC clip was paid with no human (with its HCS entry and Claude note), and a 6 USDC clip was **not** paid; a real Agent Pass approval was opened instead (PROOFS HED-05, WLD-04).
+
+**Live now:** worker (checks clips) and agent (pays) run on Railway; the site is on Vercel. Two tasks: towel (3 USDC, paid automatically) and T-shirt (6 USDC, needs your approval).
+
 ---
 
 ## How to check things yourself
@@ -239,6 +273,9 @@ pnpm test:claims    # live claim rules: one human per slot, no overbooking, forg
 pnpm worker:dev     # run the worker locally on :8099
 pnpm test:upload    # upload rules against the running worker
 pnpm test:record    # real Chrome + fake camera: record → upload → status page
+pnpm test:pipeline  # AI check + Swarm + Arkiv verdict + duplicate catch (test namespace)
+pnpm test:x402      # real USDC: agent buys a clip, key + receipt + licence
+pnpm test:agent     # the agent pays under the limit and asks a human above it
 pnpm verify         # the full gate that runs before every push to main
 pnpm dev            # run the website locally on http://localhost:3000
 ```

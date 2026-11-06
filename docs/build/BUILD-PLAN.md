@@ -39,6 +39,15 @@ Every phase ends with `pnpm verify` (typecheck + lint + unit tests + production 
 | P3.1 Recorder | back camera, challenge pinned, 15–30 s, preview, retake; records past 15 s | Passed in Chrome with fake camera (17 s MP4/H.264); real iPhone test = manual |
 | P3.2 Worker upload server | valid → 202; reused → 409; 70 MB → 413; bad token 401; wrong type / not video 415; CORS | Passed (`pnpm test:upload`, 11/11) |
 | P3.3 Upload UX | XHR progress, 3 retries, redirect to status page | Passed (`pnpm test:record`, 9/9 end to end) |
+| P4 Verification | probe → fingerprint ∥ Gemini → code verdict → AES → Swarm → Arkiv submission + verification; duplicate caught | Passed (`pnpm test:pipeline`, live) |
+| P4 Reputation | 10 free checks, accept refunds, block after 5 rejects / <40%; enforced at claim | Passed (unit tests) |
+| P5.1 x402 endpoint | 404 not accepted · 402 · agent pays · 200 + key after settle · 409 no double charge | Passed (`pnpm test:x402`, real USDC) |
+| P5.2 After settlement | receipt (live, tx) + licence owned by contributor on Arkiv | Passed |
+| P5.3 Contributor payout | payTo = contributor's own Hedera account | Passed (USDC to 0.0.11333310) |
+| P6.1 Policy | auto limit / hard cap / daily budget / allow-list / approval binding | Passed (9 unit tests) |
+| P6.2 Agent loop | under-limit clip paid with no human; Claude note | Passed (`pnpm test:agent`) |
+| P6.3 Agent Pass | over-limit → not paid, real device approval opened; approve/deny on a phone | Opened ✓; approve/deny = manual phone step |
+| P6.4 HCS spend log | every decision on topic 0.0.11343565 | Passed |
 | P-UI All screens | every route 200, sample regions badged, real data where it exists | Passed (local prod build, screenshots) |
 | P1.5 First reads | `/tasks` shows the seeded task; `/explorer` returns the same key | Passed (live URL) |
 
@@ -52,14 +61,14 @@ Status: **Not run** · **Passed** · **Failed**. Only mark Passed after actually
 | A3 | Second claim by the same human rejected | Passed (integration test, stubbed World) |
 | A4 | Cancelled World ID verification takes no slot | Passed (browser test) |
 | A5 | Upload from iPhone Safari (≥18 s) and Android Chrome | Not run |
-| A6 | Duplicate clip rejected across buyers | Not run |
-| A7 | Verdict with timestamped evidence written to Arkiv by the verifier wallet | Not run |
-| A8 | Clip stored on Swarm through our Bee node with batch `c0cc5436…` | Not run |
+| A6 | Duplicate clip rejected across buyers | Passed (pipeline test) |
+| A7 | Verdict with timestamped evidence written to Arkiv by the verifier wallet | Passed (adx-test) |
+| A8 | Clip stored on Swarm through our Bee node with batch `c0cc5436…` | Wired in production worker; first real clip pending |
 | A9 | Agent pays over x402 under threshold with no human; HashScan link | Passed (smoke test, HED-02) |
 | A10 | Payment above threshold waits for Agent Pass; approved → paid | Not run |
-| A11 | Agent Pass denied / expired → nothing paid | Not run |
-| A12 | Receipt written only after settlement | Not run |
-| A13 | Licence owned by the contributor; withdrawal drops the clip | Not run |
+| A11 | Agent Pass denied / expired → nothing paid | Code + unit tests passed; phone run pending |
+| A12 | Receipt written only after settlement | Passed |
+| A13 | Licence owned by the contributor; withdrawal drops the clip | Ownership passed; withdrawal = P7 |
 | A14 | Outside-agent script shows the same state as the UI | Not run |
 | A15 | Arkiv reset recovery via `pnpm seed:arkiv` | Not run |
 | A16 | Verifier accuracy measured on 16 clips | Not run |

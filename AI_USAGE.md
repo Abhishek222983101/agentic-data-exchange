@@ -12,3 +12,4 @@ ETHGlobal requires us to say which parts AI wrote or assisted.
 - **P-UI:** Claude Code wrote the landing, status/verdict, me, console, approve, proofs and record screens, plus the pipeline/verdict components and typed sample data.
 - **P2 Identity:** Claude Code wrote the wallet vault, World ID server checks, claim service, API routes, claim flow UI, Hedera account helper, the alias spike and the claim integration test.
 - **P3 Capture and upload:** Claude Code wrote the recorder, upload helpers, record routes, worker upload server, Dockerfile, Railway service setup and the upload/recorder tests.
+- **P4–P6:** Claude Code wrote the verification pipeline (media, Gemini call, verdict rules, runner), reputation, the x402 sale endpoint and settlement recording, the spending policy, the buyer agent (Agent Pass device flow, x402 payer, HCS log, Claude notes), the console/approve/paid screens, and all P4–P6 tests.
