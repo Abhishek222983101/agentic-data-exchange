@@ -108,6 +108,7 @@ pnpm seed:arkiv               # verifier listing + demo task on Arkiv
 pnpm dev                      # web on :3000
 pnpm worker:dev               # worker on :8099
 pnpm --filter @adx/agent dev  # buying agent
+pnpm outside-agent           # what any outside agent sees, from Arkiv only
 pnpm sponsor:check            # live ✅/⏳/❌ against Hedera, Arkiv, Swarm, World, the repo
 ```
 

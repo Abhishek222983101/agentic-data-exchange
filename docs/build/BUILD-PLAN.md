@@ -69,7 +69,7 @@ Status: **Not run** · **Passed** · **Failed**. Only mark Passed after actually
 | A11 | Agent Pass denied / expired → nothing paid | Passed (expired requests declined, nothing paid) |
 | A12 | Receipt written only after settlement | Passed |
 | A13 | Licence owned by the contributor; withdrawal drops the clip | Ownership passed; withdrawal cut (not built) |
-| A14 | Outside-agent script shows the same state as the UI | Not run |
+| A14 | Outside-agent script shows the same state as the UI | Passed (`pnpm outside-agent`: public RPC only, same tasks/claims/verdicts/payments as the app) |
 | A15 | Arkiv reset recovery via `pnpm seed:arkiv` | Not run |
 | A16 | Verifier accuracy measured on 16 clips | Cut: raw clips are deleted after checking; README lists real verdicts |
 
