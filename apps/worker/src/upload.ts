@@ -110,9 +110,23 @@ export function uploadHandler({ db, secret, clipDir }: Deps) {
     }
 
     const { claim, task } = v.payload
+    const [cp0] = await db
+      .select({ challenge: claimsPrivate.challenge })
+      .from(claimsPrivate)
+      .where(eq(claimsPrivate.claimKey, claim))
+      .limit(1)
     const [job] = await db
       .insert(jobs)
-      .values({ id, claimKey: claim, taskKey: task, path, bytes, mime, status: "queued" })
+      .values({
+        id,
+        claimKey: claim,
+        taskKey: task,
+        path,
+        bytes,
+        mime,
+        challenge: cp0?.challenge ?? null,
+        status: "queued",
+      })
       .returning({ id: jobs.id })
     await db
       .insert(events)

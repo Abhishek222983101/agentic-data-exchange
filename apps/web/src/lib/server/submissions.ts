@@ -52,7 +52,11 @@ export async function submissionView(id: string): Promise<SubmissionView | null>
     status: job.status,
     bytes: job.bytes,
     receivedAt: job.createdAt.toISOString(),
-    challenge: claim?.challenge ? decodeChallenge(claim.challenge) : await challengeFromArkiv(job.claimKey),
+    challenge: job.challenge
+      ? decodeChallenge(job.challenge)
+      : claim?.challenge
+        ? decodeChallenge(claim.challenge)
+        : await challengeFromArkiv(job.claimKey),
     events: evs.map((e) => ({
       id: e.id,
       step: e.step as PipelineEvent["step"],

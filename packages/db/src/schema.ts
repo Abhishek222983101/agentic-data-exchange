@@ -60,6 +60,7 @@ export const jobs = pgTable(
     path: text("path").notNull(),
     bytes: integer("bytes"),
     mime: text("mime"),
+    challenge: text("challenge"), // copied from the claim at upload, so the check never depends on the claim's 2 h expiry
     status: text("status").notNull().default("queued"),
     attempts: integer("attempts").default(0).notNull(),
     error: text("error"),
