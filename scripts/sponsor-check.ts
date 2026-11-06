@@ -1,3 +1,4 @@
+// biome-ignore-all lint/suspicious/noExplicitAny: mirror-node JSON is read loosely in this read-only report script
 // pnpm sponsor:check — verifies every sponsor criterion against LIVE data (Hedera mirror node, Arkiv, Swarm via
 // our Bee node, Neon, the repo) and prints ✓ / ✗ / … (pending). Nothing here is hard-coded as passing.
 
@@ -18,8 +19,10 @@ const TOPIC = process.env.HEDERA_SPEND_TOPIC_ID ?? "0.0.11343565"
 
 type Row = { id: string; what: string; state: "ok" | "no" | "todo"; proof: string }
 const rows: Record<string, Row[]> = {}
-const add = (sponsor: string, id: string, what: string, state: Row["state"], proof: string) =>
-  (rows[sponsor] ??= []).push({ id, what, state, proof })
+const add = (sponsor: string, id: string, what: string, state: Row["state"], proof: string) => {
+  if (!rows[sponsor]) rows[sponsor] = []
+  rows[sponsor].push({ id, what, state, proof })
+}
 async function check(sponsor: string, id: string, what: string, fn: () => Promise<[Row["state"], string]>) {
   try {
     const [state, proof] = await fn()
@@ -303,7 +306,7 @@ add("ETHGlobal", "E-3", "Submitted with Hedera + Arkiv (+Swarm) + World", "todo"
 
 // ---------------- print ----------------
 const icon = { ok: "✅", no: "❌", todo: "⏳" }
-let totals = { ok: 0, no: 0, todo: 0 }
+const totals = { ok: 0, no: 0, todo: 0 }
 for (const [sponsor, list] of Object.entries(rows)) {
   console.log(`\n━━ ${sponsor} ━━`)
   for (const r of list) {
@@ -312,5 +315,4 @@ for (const [sponsor, list] of Object.entries(rows)) {
   }
 }
 console.log(`\n${totals.ok} working · ${totals.todo} pending · ${totals.no} not done`)
-totals = totals
 process.exit(0)
