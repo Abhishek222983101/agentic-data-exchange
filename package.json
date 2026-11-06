@@ -31,7 +31,8 @@
     "test:claim-ui": "cd apps/web && tsx test/claim-ui.e2e.mts",
     "test:pipeline": "cd apps/worker && ARKIV_NS=adx-test NODE_OPTIONS=--dns-result-order=ipv4first tsx --env-file=../../.env test/pipeline.int.ts",
     "test:x402": "cd apps/web && ARKIV_NS=adx-test NODE_OPTIONS=--dns-result-order=ipv4first tsx --env-file=../../.env test/x402.int.mts",
-    "hcs:topic": "tsx --env-file=.env scripts/hcs-topic.ts"
+    "hcs:topic": "tsx --env-file=.env scripts/hcs-topic.ts",
+    "test:agent": "cd apps/agent && ARKIV_NS=adx-test NODE_OPTIONS=--dns-result-order=ipv4first tsx --env-file=../../.env test/agent.int.ts"
   },
   "dependencies": {
     "@adx/db": "workspace:^",
