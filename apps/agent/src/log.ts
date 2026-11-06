@@ -5,6 +5,7 @@ import type { dbPool } from "@adx/db"
 import { events } from "@adx/db"
 import { operatorClient } from "@adx/shared/hedera"
 import { TopicMessageSubmitTransaction } from "@hiero-ledger/sdk"
+import { kitSubmitTopicMessage } from "./hedera-kit"
 
 type DB = ReturnType<typeof dbPool>
 export type AgentAction =
@@ -90,23 +91,34 @@ export async function explain(action: AgentAction, facts: Record<string, unknown
   }
 }
 
+/**
+ * Write one spend-log message to HCS through the Hedera Agent Kit's submit-topic-message tool. If the kit
+ * fails, fall back to a plain Hiero SDK submit so the public log never goes quiet. Returns the tx id.
+ */
+export async function submitSpendLog(topic: string, msg: string): Promise<string | undefined> {
+  try {
+    return await kitSubmitTopicMessage(topic, msg)
+  } catch (e) {
+    console.error("[hcs] agent kit submit failed, using SDK:", (e as Error).message)
+  }
+  try {
+    const c = operatorClient()
+    const r = await new TopicMessageSubmitTransaction().setTopicId(topic).setMessage(msg).execute(c)
+    await r.getReceipt(c)
+    return r.transactionId.toString()
+  } catch (e) {
+    console.error("[hcs]", (e as Error).message)
+    return undefined
+  }
+}
+
 export async function record(db: DB, action: AgentAction, facts: Record<string, unknown>) {
   const note = await explain(action, facts)
   let hcsTx: string | undefined
   const topic = process.env.HEDERA_SPEND_TOPIC_ID
   if (topic && action !== "heartbeat") {
-    try {
-      const c = operatorClient()
-      const msg = JSON.stringify({ v: 1, t: new Date().toISOString(), action, ...facts })
-      const r = await new TopicMessageSubmitTransaction()
-        .setTopicId(topic)
-        .setMessage(msg.slice(0, 1000))
-        .execute(c)
-      await r.getReceipt(c)
-      hcsTx = r.transactionId.toString()
-    } catch (e) {
-      console.error("[hcs]", (e as Error).message)
-    }
+    const msg = JSON.stringify({ v: 1, t: new Date().toISOString(), action, ...facts }).slice(0, 1000)
+    hcsTx = await submitSpendLog(topic, msg)
   }
   await db.insert(events).values({
     scope: "agent",
