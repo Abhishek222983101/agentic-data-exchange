@@ -5,11 +5,17 @@
   "packageManager": "pnpm@10.0.0",
   "scripts": {
     "arkiv:smoke": "node --env-file=.env --experimental-strip-types scripts/arkiv-smoke.ts",
-    "hedera:setup": "node --env-file=.env --experimental-strip-types scripts/hedera-setup.ts"
+    "hedera:setup": "node --env-file=.env --experimental-strip-types scripts/hedera-setup.ts",
+    "x402:smoke": "node --env-file=.env --experimental-strip-types scripts/x402-smoke.ts"
   },
   "dependencies": {
     "@arkiv-network/sdk": "1.0.1",
     "@hiero-ledger/sdk": "2.90.1",
+    "@x402/core": "2.30.0",
+    "@x402/express": "2.30.0",
+    "@x402/fetch": "2.30.0",
+    "@x402/hedera": "2.30.0",
+    "express": "5",
     "viem": "2.57.16"
   }
 }
