@@ -4,6 +4,12 @@
 > Written 6 Nov 2026 (Fri) ~11:30 IST. Submissions close **Sat 7 Nov 09:00 IST**.
 > This is the single reference for building ADX. The coding agent builds phase by phase from §19. Humans read `docs/build/OVERVIEW.md` first.
 
+## The whole system at a glance
+
+![ADX system architecture](diagrams/00-architecture.png)
+
+*Source: `diagrams/architecture.html` (open in a browser). Every Mermaid diagram below also has a rendered image in `diagrams/`.*
+
 ## Contents
 0. How to use this document
 1. Ground truth: what already exists (verified)
@@ -333,6 +339,11 @@ adx/
 
 ### 8.1 Master diagram (the whole system)
 
+![01-master](diagrams/01-master.png)
+
+<details><summary>Mermaid source</summary>
+
+
 ```mermaid
 flowchart TB
   classDef person fill:#fff7ed,stroke:#FE7446,color:#111
@@ -401,7 +412,14 @@ flowchart TB
   UI -->|live status SSE| PG
 ```
 
+</details>
+
 ### 8.2 Deployment topology
+
+![02-deployment](diagrams/02-deployment.png)
+
+<details><summary>Mermaid source</summary>
+
 
 ```mermaid
 flowchart LR
@@ -430,7 +448,14 @@ flowchart LR
   Judges -->|JSON-RPC| ARKIV[(Arkiv RPC)]
 ```
 
+</details>
+
 ### 8.3 Where data lives
+
+![03-data-placement](diagrams/03-data-placement.png)
+
+<details><summary>Mermaid source</summary>
+
 ```mermaid
 flowchart LR
   subgraph Public[PUBLIC · anyone can read]
@@ -451,7 +476,14 @@ flowchart LR
   end
 ```
 
+</details>
+
 ### 8.4 Sequence: claim a slot (IDKit)
+
+![04-claim-sequence](diagrams/04-claim-sequence.png)
+
+<details><summary>Mermaid source</summary>
+
 ```mermaid
 sequenceDiagram
   autonumber
@@ -477,7 +509,14 @@ sequenceDiagram
   end
 ```
 
+</details>
+
 ### 8.5 Sequence: upload → verify → publish
+
+![05-verify-sequence](diagrams/05-verify-sequence.png)
+
+<details><summary>Mermaid source</summary>
+
 ```mermaid
 sequenceDiagram
   autonumber
@@ -510,7 +549,14 @@ sequenceDiagram
   R->>DB: events (each step) → SSE to phone
 ```
 
+</details>
+
 ### 8.6 Sequence: autonomous payment (x402) and approval (Agent Pass)
+
+![06-payment-sequence](diagrams/06-payment-sequence.png)
+
+<details><summary>Mermaid source</summary>
+
 ```mermaid
 sequenceDiagram
   autonumber
@@ -554,30 +600,49 @@ sequenceDiagram
   G->>G: download ciphertext, decrypt, verify sha256 vs Arkiv
 ```
 
+</details>
+
 ### 8.7 State machines
+
+![07-state-machines](diagrams/07-state-machines.png)
+
+<details><summary>Mermaid source</summary>
+
 ```mermaid
 stateDiagram-v2
   direction LR
-  state Task { [*] --> open : buyer posts
+  state "Task" as T {
+    [*] --> open : buyer posts
     open --> filled : filled == slots
-    open --> [*] : $expiresAt (deadline) }
-  state Claim { [*] --> active : World ID ok
+    open --> [*] : deadline expiry
+  }
+  state "Claim" as C {
+    [*] --> active : World ID ok
     active --> submitted : clip uploaded
-    active --> [*] : 2 h expiry frees slot }
-  state Submission { [*] --> pending
+    active --> [*] : 2 h expiry
+  }
+  state "Submission" as S {
+    [*] --> pending
     pending --> accepted
     pending --> rejected
-    pending --> review }
-  state Payment { [*] --> quoted
-    quoted --> approving : > threshold
-    approving --> settling : approved
-    approving --> denied : denied/expired
+    pending --> review
+  }
+  state "Payment" as P {
+    [*] --> quoted
     quoted --> settling : auto
+    quoted --> approving : above threshold
+    approving --> settling : approved
+    approving --> denied : denied or expired
     settling --> settled
-    settling --> failed }
-  state Licence { [*] --> granted : after settle, owner = contributor
-    granted --> [*] : withdrawn (deleted) or term expires }
+    settling --> failed
+  }
+  state "Licence" as L {
+    [*] --> granted : after settle
+    granted --> [*] : withdrawn or term ends
+  }
 ```
+
+</details>
 
 ---
 
@@ -922,6 +987,8 @@ Device authorization grant (§9.4). Server-side validation: `iss = https://auth.
 | 11 | P10 Docs, video, submission | 2 | Volume, not difficulty |
 
 **Order we build in** (dependencies first, hardest work started as early as the order allows, visible result after every phase):
+
+![build timeline](diagrams/08-build-timeline.png)
 
 ```mermaid
 gantt

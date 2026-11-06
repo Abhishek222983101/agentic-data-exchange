@@ -1,5 +1,7 @@
 # ADX — The overview (read this first)
 
+![ADX system architecture](diagrams/00-architecture.png)
+
 Plain-language guide to what we're building, how the pieces fit, and what each build phase does. The engineering detail is in `SYSTEM-ARCHITECTURE.md`. This file is for humans: you, teammates, a manager, a judge.
 
 ## The idea in 30 seconds
