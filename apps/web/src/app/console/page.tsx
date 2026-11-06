@@ -1,5 +1,6 @@
 import { links, shortHex } from "@adx/shared"
 import { WRITERS } from "@adx/shared/arkiv"
+import { DEFAULT_POLICY } from "@adx/shared/policy"
 import type { Metadata } from "next"
 import Link from "next/link"
 import { Suspense } from "react"
@@ -13,7 +14,11 @@ import { agentFeed, pendingApprovals, recentClips } from "@/lib/server/console"
 export const metadata: Metadata = { title: "Buyer console" }
 
 // The rules the buyer agent is configured with (system architecture §12). Enforced in code from P6.
-const POLICY = { perClip: "5", threshold: "5", daily: "20" }
+const POLICY = {
+  auto: DEFAULT_POLICY.autoLimitUsd,
+  hardCap: DEFAULT_POLICY.hardCapUsd,
+  daily: DEFAULT_POLICY.dailyBudgetUsd,
+}
 
 export default function ConsolePage() {
   return (
@@ -33,10 +38,12 @@ export default function ConsolePage() {
               Spending rules
             </h2>
             <dl className="mt-4 grid grid-cols-2 gap-y-4 text-[14px]">
-              <dt className="text-muted-foreground">Per clip, max</dt>
-              <dd className="text-right font-mono tabular">{POLICY.perClip} USDC</dd>
-              <dt className="text-muted-foreground">Needs a human above</dt>
-              <dd className="text-right font-mono tabular">{POLICY.threshold} USDC</dd>
+              <dt className="text-muted-foreground">Pays on its own up to</dt>
+              <dd className="text-right font-mono tabular">{POLICY.auto} USDC</dd>
+              <dt className="text-muted-foreground">Above that</dt>
+              <dd className="text-right">You approve with World ID</dd>
+              <dt className="text-muted-foreground">Never more than</dt>
+              <dd className="text-right font-mono tabular">{POLICY.hardCap} USDC a clip</dd>
               <dt className="text-muted-foreground">Daily budget</dt>
               <dd className="text-right font-mono tabular">{POLICY.daily} USDC</dd>
             </dl>

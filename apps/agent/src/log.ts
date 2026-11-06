@@ -17,9 +17,56 @@ export type AgentAction =
   | "task_posted"
   | "heartbeat"
 
-async function explain(action: AgentAction, facts: Record<string, unknown>): Promise<string | null> {
+/** Plain facts in words, so the note can't misread a field (e.g. call a human approval "automatic"). */
+function plain(action: AgentAction, f: Record<string, unknown>): Record<string, unknown> {
+  const amount = f.amount !== undefined ? `${f.amount} USDC` : undefined
+  const how =
+    f.approval === "agent-pass"
+      ? "a human approved it with World ID (World Agent Pass) before I paid"
+      : f.approval === "auto"
+        ? "it was within my 5 USDC limit, so I paid on my own"
+        : undefined
+  return {
+    whatHappened: action,
+    amount,
+    paidTo: f.payTo ? `the person who filmed the clip (Hedera account ${f.payTo})` : undefined,
+    approval: how,
+    reason: f.reason,
+  }
+}
+
+/** Used when Claude is unavailable, or its sentence contradicts the facts. */
+function template(action: AgentAction, f: Record<string, unknown>): string | null {
+  const amt = `${f.amount} USDC`
+  switch (action) {
+    case "paid":
+      return f.approval === "agent-pass"
+        ? `Paid ${amt} to the person who filmed the clip after you approved it with World ID.`
+        : `Paid ${amt} to the person who filmed the clip on my own; it was within my limit.`
+    case "needs_human":
+      return `Paused a ${amt} payment: it's above my 5 USDC limit, so a human must approve it.`
+    case "approved":
+      return `A human approved the ${amt} payment with World ID, so I'm paying now.`
+    case "declined":
+      return `Did not pay ${amt}: ${String(f.reason ?? "it was not approved")}.`
+    default:
+      return null
+  }
+}
+
+function contradicts(note: string, f: Record<string, unknown>): boolean {
+  if (f.approval === "agent-pass" && /automatic|on my own|without (a )?human/i.test(note)) return true
+  if (f.approval === "auto" && /\byou approved|world id/i.test(note)) return true
+  if (/vendor|merchant/i.test(note)) return true
+  if (f.amount !== undefined && !note.includes(String(f.amount))) return true
+  return false
+}
+
+export async function explain(action: AgentAction, facts: Record<string, unknown>): Promise<string | null> {
   const key = process.env.ANTHROPIC_API_KEY
-  if (!key || action === "heartbeat") return null
+  if (action === "heartbeat") return null
+  const fallback = template(action, facts)
+  if (!key) return fallback
   try {
     const res = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
@@ -28,16 +75,18 @@ async function explain(action: AgentAction, facts: Record<string, unknown>): Pro
         model: process.env.AGENT_MODEL ?? "claude-haiku-5-5",
         max_tokens: 60,
         system:
-          "You are the buyer agent for a robot team. In one short plain sentence (max 18 words), tell your human what you just did and why. Use only the facts given. No jargon, no emojis, never invent numbers or limits. If the reason is a technical error, say it was a technical problem, not a team rule.",
-        messages: [{ role: "user", content: JSON.stringify({ action, ...facts }) }],
+          "You are the buying agent for a robot team that buys training clips filmed by people. In one short plain sentence (max 18 words), tell your human what you just did and why. Use only the facts given and keep their meaning exactly: if a human approved, say so; never call it automatic. Write money as '<n> USDC'. The money goes to the person who filmed the clip, never call them a vendor. No jargon, no emojis, never invent numbers or limits. If the reason is a technical error, say it was a technical problem, not a team rule.",
+        messages: [{ role: "user", content: JSON.stringify(plain(action, facts)) }],
       }),
       signal: AbortSignal.timeout(6000),
     })
-    if (!res.ok) return null
+    if (!res.ok) return fallback
     const j = (await res.json()) as { content?: Array<{ text?: string }> }
-    return j.content?.[0]?.text?.trim().slice(0, 200) ?? null
+    const note = j.content?.[0]?.text?.trim().slice(0, 200)
+    if (!note || contradicts(note, facts)) return fallback
+    return note
   } catch {
-    return null
+    return fallback
   }
 }
 
