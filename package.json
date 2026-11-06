@@ -27,7 +27,8 @@
     "test:claims": "cd apps/web && ARKIV_NS=adx-test tsx --conditions=react-server --env-file=../../.env test/claims.int.mts",
     "test:upload": "cd apps/worker && tsx --env-file=../../.env test/upload.int.ts",
     "worker:dev": "cd apps/worker && PORT=8099 CLIP_DIR=/tmp/adx-clips tsx --env-file=../../.env src/main.ts",
-    "test:record": "cd apps/web && tsx --env-file=../../.env test/record.e2e.mts"
+    "test:record": "cd apps/web && tsx --env-file=../../.env test/record.e2e.mts",
+    "test:claim-ui": "cd apps/web && tsx test/claim-ui.e2e.mts"
   },
   "dependencies": {
     "@adx/db": "workspace:^",
