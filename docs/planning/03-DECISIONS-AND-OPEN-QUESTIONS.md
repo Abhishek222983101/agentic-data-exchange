@@ -95,3 +95,25 @@
 8. World: IDKit or Agent Pass (Q16)?
 9. Team roles for the 4 people (Q10)?
 10. Repo name, host, GitHub org (Q11)?
+
+## Combined plan after research 09–13 (6 Nov 2026, ~08:30 IST)
+
+User direction (6 Nov): build production-grade, not a hackathon toy; Arkiv is the main target and must be integrated end to end with no weak spots; reuse what we legally can; beat Skarl on every axis.
+
+| # | Topic | Status | Decision | Source |
+|---|---|---|---|---|
+| D10 | Prize stacking | VERIFIED | ETHGlobal: "If a partner has multiple tracks, you can be eligible for all of them while only counting as 1 Partner Prize." Tick every track we qualify for (World IDKit + Agent Pass; Hedera x402 + No Solidity). Arkiv caps at 1 track prize + Swarm bonus. No 2026 precedent of winning 2 tracks from one sponsor: plan for one prize per partner. | research/09 |
+| D11 | Niche | LEANING | Gap-driven robot manipulation demos: buyer agent buys exactly the demonstrations its model fails on, N slots per task, one per verified human. Contributor owns an expiring, withdrawable licence entity on Arkiv. DPDP Consent Manager rules start 13 Nov 2026 (verified). Fallback niche: Indic speech. | research/11 |
+| D12 | x402 endpoint | LEANING | Sells the accepted-clip licence + decryption key. Returns 402 only for accepted clips. `withX402` settles AFTER the handler (verified in @x402/next 2.30.0 source), so Arkiv receipt + key release happen only after settlement succeeds. Per-request payTo to contributor = hour-1 spike; fallback labelled HTS transfer. | research/10, 11 |
+| D13 | World | LEANING | Agent Pass (OIDC at auth.world.org, $5k) for buyer-agent approval above a threshold; also tick IDKit if it fits the contributor uniqueness check. Ask World booth how mocked proofs work. | research/09 |
+| D14 | Swarm | LEANING | Clip encrypted client/worker-side, ciphertext on Swarm, encrypted reference stored on Arkiv via `arkiv-encryption` 1.1.3 (MIT). Own Bee 2.8.3 node + own postage batch (bonus needs batch ID). Prove upload on api.gateway.ethswarm.org in hour 0; ask booth for a batch. | research/09, 12 |
+| D15 | App | DECIDED | Next.js 16.4.5 mobile web app; no RN/Expo. MediaRecorder.start(1000) (iOS freeze bug), back camera, mp4→webm fallback. Test via cloudflared tunnel + Vercel previews. | research/12 |
+| D16 | Private DB | LEANING | Neon + Drizzle: nullifiers UNIQUE(action, nullifier), wrapped keys, job queue table. | research/12 |
+| D17 | Worker | OPEN | Clips >4.5 MB can't go through Vercel: Node worker (ffmpeg, dHash, Gemini Files API, Swarm upload, Arkiv writes). Host: separate VPS/Railway/Fly recommended, NOT the shared client Contabo box unless user accepts. | research/12 |
+| D18 | Repo | LEANING | pnpm monorepo apps/web, apps/worker, apps/agent, packages/shared, scripts/. Separate Arkiv wallets per service (nonce collisions). Vercel Hobby won't deploy teammate commits on a private repo: make public early or Pro trial. | research/12 |
+| D19 | Adopted from teammate docs | LEANING | verifier listing on Arkiv with 24 h heartbeat; pre/post-pay checks (Arkiv owner == 402 payTo); `mode: live|simulated` on receipts; secret/PII guard on every Arkiv write; payout key behind policy, not agent; fresh pseudonym per claim; approval hash bound to exact payout; 16-clip eval. | research/10 |
+| D20 | Tooling | LEANING | Install: Arkiv plugin (tool only), hedera-skills (Apache-2.0), shadcn MCP, gemini-api-dev, emilkowalski find-animation-opportunities; better-interface once near the end. Skip superfuture (telemetry), obscura, landing-craft. | research/12, 13 |
+| D21 | Skarl | DECIDED | Reference only (no licence + from-scratch rule). Rebuild ideas in our own code. | rules |
+
+Ask at booths: World (mocked proofs), Swarm/Arkiv (hackathon postage batch, gateway size limits), Hedera (per-request payTo in @x402/hedera; two-track eligibility), ETHGlobal (written plan as "designs").
+Need from teammate: SESSION-HANDOFF.md, 05-SWARM-DOCS-CHECK.md.
