@@ -45,6 +45,11 @@ describe("write guard", () => {
       ),
     })
   })
+  it("allows fingerprints in their exact format only", () => {
+    ok({ dhash: "0123456789abcdef|1234567890123456|fedcba9876543210", dhashA: "0123" })
+    bad({ dhash: "call me +91 98765 43210" })
+    bad({ dhashA: "12345" })
+  })
   it("rejects strings over 128 bytes", () => bad({ title: "x".repeat(129) }))
   it("never echoes the value in the error", () => {
     try {

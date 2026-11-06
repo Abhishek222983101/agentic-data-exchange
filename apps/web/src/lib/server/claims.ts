@@ -5,11 +5,12 @@
 // The nullifier and wallet stay in Neon; Arkiv only gets the pseudonym, slot and challenge.
 import "server-only"
 import { randomBytes } from "node:crypto"
-import { claimsPrivate, contributors, db, desc, eq, jobs, sql, uploadTokens } from "@adx/db"
+import { claimsPrivate, contributors, db, desc, eq, humans, jobs, sql, uploadTokens } from "@adx/db"
 import { S, safeCreate, taskByKey } from "@adx/shared/arkiv"
 import { decodeChallenge, encodeChallenge, newChallenge } from "@adx/shared/challenge"
 import { type ClaimResponse, claimMessage, claimSignal } from "@adx/shared/claim"
 import { issueUploadToken } from "@adx/shared/upload-token"
+import { checksLeft, isBlocked } from "@adx/shared/verdict"
 import { ExpirationTime } from "@arkiv-network/sdk"
 import { key as keyV, str, u64 } from "@arkiv-network/sdk/schema"
 import { type Hex, hashMessage, isAddressEqual, recoverMessageAddress, recoverPublicKey } from "viem"
@@ -68,6 +69,15 @@ export async function claimSlot(
 
   // 3. A real, unique human, and the proof is bound to this task + wallet.
   const nullifier = await deps.verify(idkit, claimSignal(taskKey, wallet))
+
+  // Reputation gate: free checks and the garbage-data block are per person (World ID), not per wallet.
+  const [h] = await db().select().from(humans).where(eq(humans.nullifier, nullifier)).limit(1)
+  if (h && isBlocked(h)) {
+    fail(403, "blocked", "This World ID can't claim tasks anymore: too many clips were rejected.")
+  }
+  if (h && checksLeft(h) <= 0) {
+    fail(403, "no_checks_left", "You've used your free checks. Each accepted clip earns one back.")
+  }
 
   // 4. Reserve a slot atomically. Same human again → resume their claim if it's live, else 409.
   const d = db()

@@ -14,7 +14,8 @@
     "./swarm": "./src/swarm.ts",
     "./events": "./src/events.ts",
     "./claim": "./src/claim.ts",
-    "./hedera": "./src/hedera.ts"
+    "./hedera": "./src/hedera.ts",
+    "./verdict": "./src/verdict.ts"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",

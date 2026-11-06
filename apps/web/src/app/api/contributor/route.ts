@@ -1,5 +1,6 @@
 // GET /api/contributor?wallet=0x… → the contributor's Hedera account (public info, also on the Mirror Node).
-import { contributors, db, eq } from "@adx/db"
+import { claimsPrivate, contributors, db, desc, eq, humans } from "@adx/db"
+import { checksLeft, FREE_CHECKS, isBlocked } from "@adx/shared/verdict"
 import { NextResponse } from "next/server"
 import { clientIp, fail, handle, rateLimit } from "@/lib/server/api"
 

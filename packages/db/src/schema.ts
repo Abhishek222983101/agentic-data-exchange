@@ -130,3 +130,16 @@ export const rateLimits = pgTable("rate_limits", {
   count: integer("count").notNull().default(0),
   expiresAt: ts("expires_at").notNull().default(sql`now() + interval '1 hour'`),
 })
+
+/**
+ * Reputation + free checks per verified human, keyed by the World ID nullifier (same person = same key on
+ * every task, so new wallets can't reset it). Private: never published as-is.
+ */
+export const humans = pgTable("humans", {
+  nullifier: text("nullifier").primaryKey(),
+  accepted: integer("accepted").notNull().default(0),
+  rejected: integer("rejected").notNull().default(0),
+  rejectStreak: integer("reject_streak").notNull().default(0),
+  checksUsed: integer("checks_used").notNull().default(0),
+  updatedAt: ts("updated_at").defaultNow().notNull(),
+})

@@ -38,7 +38,24 @@ const HEX64_BARE = /(?<![0-9a-fA-F])[0-9a-fA-F]{64}(?![0-9a-fA-F])/
 
 const MAX_STR_BYTES = 128
 
+/**
+ * Fingerprint columns hold digit-heavy hex that trips the phone-number rule. They're allowed only when they
+ * match their exact format, which by itself proves they aren't free text or a secret.
+ */
+const STRICT_FORMAT: Record<string, RegExp> = {
+  dhash: /^[0-9a-f]{16}\|[0-9a-f]{16}\|[0-9a-f]{16}$/,
+  dhashA: /^[0-9a-f]{4}$/,
+  dhashB: /^[0-9a-f]{4}$/,
+  dhashC: /^[0-9a-f]{4}$/,
+}
+
 function scanText(schema: string, column: string, text: string, isStrColumn: boolean): void {
+  const strict = STRICT_FORMAT[column]
+  if (strict && isStrColumn) {
+    if (!strict.test(text))
+      throw new UnsafeArkivWrite(schema, column, "value doesn't match the fingerprint format")
+    return
+  }
   for (const [re, rule] of TEXT_RULES) if (re.test(text)) throw new UnsafeArkivWrite(schema, column, rule)
   if (HEX64_PREFIXED.test(text))
     throw new UnsafeArkivWrite(

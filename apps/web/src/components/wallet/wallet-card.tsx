@@ -13,13 +13,23 @@ export function WalletCard() {
   const w = useWallet()
   const [busy, setBusy] = useState(false)
   const [hedera, setHedera] = useState<string | null>(null)
+  const [rep, setRep] = useState<{
+    accepted: number
+    rejected: number
+    checksLeft: number
+    freeChecks: number
+    blocked: boolean
+  } | null>(null)
   const address = w.status === "locked" || w.status === "unlocked" ? w.address : null
 
   useEffect(() => {
     if (!address) return
     fetch(`/api/contributor?wallet=${address}`)
       .then((r) => r.json())
-      .then((j: { hederaAccount?: string | null }) => setHedera(j.hederaAccount ?? null))
+      .then((j: { hederaAccount?: string | null; reputation?: typeof rep }) => {
+        setHedera(j.hederaAccount ?? null)
+        setRep(j.reputation ?? null)
+      })
       .catch(() => undefined)
   }, [address])
 
@@ -59,6 +69,27 @@ export function WalletCard() {
             {w.mode === "passkey" ? <Fingerprint className="size-3.5" /> : <KeyRound className="size-3.5" />}
             {w.mode === "passkey" ? "Opens with your face or fingerprint" : "Kept on this device"}
           </div>
+          {rep ? (
+            <div className="mt-4 grid grid-cols-3 gap-2 text-center">
+              <div className="rounded-lg bg-background/10 py-2">
+                <div className="font-mono text-[18px] tabular">{rep.accepted}</div>
+                <div className="text-[11px] opacity-70">accepted</div>
+              </div>
+              <div className="rounded-lg bg-background/10 py-2">
+                <div className="font-mono text-[18px] tabular">{rep.rejected}</div>
+                <div className="text-[11px] opacity-70">rejected</div>
+              </div>
+              <div className="rounded-lg bg-background/10 py-2">
+                <div className="font-mono text-[18px] tabular">{rep.checksLeft}</div>
+                <div className="text-[11px] opacity-70">free checks</div>
+              </div>
+            </div>
+          ) : null}
+          {rep?.blocked ? (
+            <p className="mt-2 text-[12px] text-danger">
+              Too many rejected clips: this World ID can't claim new tasks.
+            </p>
+          ) : null}
           <div className="mt-3 flex flex-wrap gap-2 [&_a]:border-background/25 [&_a]:text-background">
             <ProofLink kind="arkiv" href={links.arkivAddress(w.address)} label="Licences on Arkiv" />
             {hedera ? (

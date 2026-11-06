@@ -27,8 +27,11 @@ export type PipelineEvent = {
     submissionKey?: string
     verificationKey?: string
     duplicateOf?: string
-    verdict?: Verdict
+    verdict?: Verdict | "duplicate"
     score?: number
+    summary?: VerdictSummary
+    submissionTx?: string
+    verificationTx?: string
   }
 }
 
