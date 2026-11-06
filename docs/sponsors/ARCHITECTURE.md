@@ -79,7 +79,7 @@ flowchart LR
 
 Web and worker use **separate Arkiv signer wallets** so their nonces never collide.
 
-## Key flows (details in FLOWS.md)
+## Key flows (details in docs/build/FLOWS.md)
 
 1. **Claim:** IDKit proof → backend verifies with World `POST /api/v4/verify/{rp_id}` → insert nullifier into Neon (unique per task) → `adx.claim` on Arkiv (2 h expiry).
 2. **Upload:** presigned PUT to Neon storage → job row → worker.

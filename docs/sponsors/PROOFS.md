@@ -1,6 +1,6 @@
 # Proofs — every on-chain action, with a link you can open
 
-Living index for judges. Each row is something that really happened on a public network during the hackathon, with an explorer link. The step-by-step story behind each row, including what broke, is in `sponsor-logs/`.
+Living index for judges. Each row is something that really happened on a public network during the hackathon, with an explorer link. The step-by-step story behind each row, including what broke, is in `docs/sponsors/session-logs/`.
 
 Screenshots are captured clean (no keys or secrets visible) into `docs/proofs/`, named by row ID.
 

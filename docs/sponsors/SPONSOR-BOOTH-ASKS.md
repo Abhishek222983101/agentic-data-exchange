@@ -21,7 +21,7 @@ Everything on this page is public. No keys or secrets are shared here.
 | What goes on Arkiv | Only the plain 64-hex reference of the **ciphertext**. The decryption key stays in our private database, never on Arkiv |
 
 ### Our Swarm setup (self-hosted, no help needed)
-We run our own Bee 2.8.3 light node (Sepolia testnet) on Railway, funded by our own wallet: Sepolia ETH swapped for sBZZ on Uniswap, chequebook deployed, our own postage batch. Every step is in `sponsor-logs/swarm-session.md`.
+We run our own Bee 2.8.3 light node (Sepolia testnet) on Railway, funded by our own wallet: Sepolia ETH swapped for sBZZ on Uniswap, chequebook deployed, our own postage batch. Every step is in `docs/sponsors/session-logs/swarm-session.md`.
 
 | | |
 |---|---|
@@ -34,7 +34,7 @@ We run our own Bee 2.8.3 light node (Sepolia testnet) on Railway, funded by our 
 2. Do testnet entities on Rabdi or batches on Swarm get reset before judging ends (Sat 7 Nov)?
 3. What is the longest expiry you'd recommend for Arkiv entities that judges will query after the event?
 
-We keep a friction log for the Arkiv feedback track (`sponsor-logs/arkiv-session.md`, `sponsor-logs/swarm-session.md`) and are happy to report anything we hit.
+We keep a friction log for the Arkiv feedback track (`docs/sponsors/session-logs/arkiv-session.md`, `docs/sponsors/session-logs/swarm-session.md`) and are happy to report anything we hit.
 
 ---
 
