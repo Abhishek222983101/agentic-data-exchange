@@ -21,6 +21,7 @@ const body = z.object({
     .regex(/^0x[0-9a-fA-F]{130}$/)
     .transform((s) => s as `0x${string}`),
   idkit: idkitResultSchema,
+  restart: z.boolean().optional(),
 })
 
 export const POST = handle(async (req) => {

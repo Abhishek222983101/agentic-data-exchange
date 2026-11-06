@@ -5,7 +5,7 @@
 // The nullifier and wallet stay in Neon; Arkiv only gets the pseudonym, slot and challenge.
 import "server-only"
 import { randomBytes } from "node:crypto"
-import { claimsPrivate, contributors, db, eq, sql, uploadTokens } from "@adx/db"
+import { claimsPrivate, contributors, db, desc, eq, jobs, sql, uploadTokens } from "@adx/db"
 import { S, safeCreate, taskByKey } from "@adx/shared/arkiv"
 import { decodeChallenge, encodeChallenge, newChallenge } from "@adx/shared/challenge"
 import { type ClaimResponse, claimMessage, claimSignal } from "@adx/shared/claim"
@@ -38,7 +38,10 @@ async function newUpload(claimKey: string, taskKey: string) {
   return { url: uploadUrl(), token: t.token, expiresAt: t.expiresAt.toISOString() }
 }
 
-export type ClaimInput = { taskKey: Hex; wallet: Hex; signature: Hex; idkit: IdkitResult }
+export type ClaimInput = { taskKey: Hex; wallet: Hex; signature: Hex; idkit: IdkitResult; restart?: boolean }
+
+/** Demo switch: lets a verified person release their own slot and claim again (still one slot per human). */
+export const restartAllowed = () => process.env.DEMO_RESTART === "true"
 
 export type ClaimDeps = { verify: (result: IdkitResult, expectedSignal: string) => Promise<string> }
 
@@ -78,8 +81,13 @@ export async function claimSlot(
     const prior = mine[0]
     const lapsed =
       prior && prior.status !== "submitted" && prior.createdAt.getTime() < Date.now() - CLAIM_TTL_MS
-    if (prior && !lapsed) return { kind: "existing" as const, row: prior }
-    if (prior && lapsed) await tx.delete(claimsPrivate).where(eq(claimsPrivate.id, prior.id))
+    const restarting = Boolean(prior && input.restart && restartAllowed())
+    if (prior && !lapsed && !restarting) return { kind: "existing" as const, row: prior }
+    if (prior && (lapsed || restarting)) {
+      // Release this person's own previous slot (and any unused upload pass) before taking a fresh one.
+      if (prior.claimKey) await tx.delete(uploadTokens).where(eq(uploadTokens.claimKey, prior.claimKey))
+      await tx.delete(claimsPrivate).where(eq(claimsPrivate.id, prior.id))
+    }
     const taken = await tx.execute(
       sql`select count(*)::int as n from claims_private where task_key = ${taskKey} and ${sql.raw(LIVE_SQL)}`,
     )
@@ -96,7 +104,15 @@ export async function claimSlot(
   if (reservation.kind === "existing") {
     const row = reservation.row
     const challenge = row.challenge ? decodeChallenge(row.challenge) : null
-    if (row.status === "active" && row.claimKey && challenge && row.wallet === wallet.toLowerCase()) {
+    if (row.status === "active" && row.claimKey && challenge) {
+      // Same human (World ID proved it). Hand back their slot, bound to the wallet they use now.
+      if (row.wallet !== wallet.toLowerCase()) {
+        await d
+          .update(claimsPrivate)
+          .set({ wallet: wallet.toLowerCase() })
+          .where(eq(claimsPrivate.id, row.id))
+        await d.insert(contributors).values({ wallet: wallet.toLowerCase() }).onConflictDoNothing()
+      }
       return {
         publicKey,
         res: {
@@ -109,7 +125,20 @@ export async function claimSlot(
         },
       }
     }
-    fail(409, "already_claimed", "You already hold a slot on this task")
+    const canRestart = restartAllowed()
+    if (row.status === "submitted" && row.claimKey) {
+      const [job] = await d
+        .select({ id: jobs.id })
+        .from(jobs)
+        .where(eq(jobs.claimKey, row.claimKey))
+        .orderBy(desc(jobs.createdAt))
+        .limit(1)
+      fail(409, "already_submitted", "You already sent a clip for this task.", {
+        submissionId: job?.id ?? null,
+        canRestart,
+      })
+    }
+    fail(409, "already_claimed", "You already hold a slot on this task.", { canRestart })
   }
 
   // 5. Publish the public claim. If Arkiv fails, release the slot so nobody is locked out.

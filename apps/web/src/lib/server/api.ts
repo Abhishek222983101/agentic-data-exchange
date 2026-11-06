@@ -9,13 +9,19 @@ export class ApiFail extends Error {
     readonly status: number,
     readonly code: string,
     message: string,
+    readonly details?: Record<string, unknown>,
   ) {
     super(message)
   }
 }
 
-export function fail(status: number, code: string, message: string): never {
-  throw new ApiFail(status, code, message)
+export function fail(
+  status: number,
+  code: string,
+  message: string,
+  details?: Record<string, unknown>,
+): never {
+  throw new ApiFail(status, code, message, details)
 }
 
 /** Wrap a handler: ApiFail → its status; anything else → 500 with a generic message (details logged). */
@@ -25,7 +31,10 @@ export function handle(fn: (req: Request) => Promise<Response>) {
       return await fn(req)
     } catch (e) {
       if (e instanceof ApiFail) {
-        return NextResponse.json({ error: { code: e.code, message: e.message } }, { status: e.status })
+        return NextResponse.json(
+          { error: { code: e.code, message: e.message, ...(e.details ? { details: e.details } : {}) } },
+          { status: e.status },
+        )
       }
       console.error("[api]", req.method, new URL(req.url).pathname, (e as Error)?.stack ?? e)
       return NextResponse.json(

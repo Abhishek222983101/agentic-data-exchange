@@ -86,8 +86,29 @@ ok(
   "same human + same wallet again → resumes the same claim",
   again.res.resumed && again.res.claimKey === first.res.claimKey,
 )
-ok("same human, other wallet → 409 already_claimed", (await code(attempt(A2, "A"))) === "409 already_claimed")
+const moved = await attempt(A2, "A")
+ok(
+  "same human, new wallet → gets the same slot back (moved to the new wallet)",
+  moved.res.resumed && moved.res.claimKey === first.res.claimKey,
+)
 ok("bad wallet signature → 401", (await code(attempt(B, "B", { badSig: true }))) === "401 bad_signature")
+process.env.DEMO_RESTART = "true"
+async function restartAttempt(acct: ReturnType<typeof privateKeyToAccount>, nullifier: string) {
+  const nonce = `0x${Math.random().toString(16).slice(2)}`
+  const idkit = {
+    protocol_version: "4.0",
+    nonce,
+    action: "claim-task",
+    responses: [{ identifier: "selfie" }],
+  } as IdkitResult
+  const signature = await acct.signMessage({ message: claimMessage(taskKey, acct.address, nonce) })
+  return claimSlot({ taskKey, wallet: acct.address, signature, idkit, restart: true }, human(nullifier))
+}
+const redo = await restartAttempt(A2, "A")
+ok(
+  "start over: same human gets a fresh claim, still one slot",
+  !redo.res.resumed && redo.res.claimKey !== first.res.claimKey && redo.res.slot === 1,
+)
 const second = await attempt(B, "B")
 ok("second human gets slot 2", second.res.slot === 2)
 ok("third human → 409 task_full", (await code(attempt(C, "C"))) === "409 task_full")

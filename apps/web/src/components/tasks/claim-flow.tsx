@@ -6,13 +6,13 @@ import type { ApiError, ClaimResponse } from "@adx/shared/claim"
 import { claimMessage, claimSignal } from "@adx/shared/claim"
 import type { IDKitResult, RpContext } from "@worldcoin/idkit"
 import { deviceLegacy, proofOfHuman, selfieCheck } from "@worldcoin/idkit"
-import { Loader2, ShieldCheck, Video } from "lucide-react"
+import { Loader2, RotateCcw, ShieldCheck, Video } from "lucide-react"
 import dynamic from "next/dynamic"
 import Link from "next/link"
 import { useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
-import { readClaims, saveClaim } from "@/lib/claims-local"
+import { dropClaim, readClaims, saveClaim } from "@/lib/claims-local"
 import { ensureAccount } from "@/lib/wallet/use-wallet"
 import { ChallengeCard } from "./challenge-card"
 
@@ -33,6 +33,9 @@ type Phase =
     }
   | { kind: "saving" }
   | { kind: "done"; claim: ClaimResponse }
+  | { kind: "blocked"; code: string; message: string; submissionId: string | null; canRestart: boolean }
+
+type ClaimError = ApiError & { error: { details?: { submissionId?: string | null; canRestart?: boolean } } }
 
 // Which World ID credential we ask for. "device" (default) = any verified World ID (Orb or device),
 // works for everyone today. "human" = World ID 4.0 proof of human (Orb). "selfie" = Selfie Check, which
@@ -51,6 +54,7 @@ export function ClaimFlow({ taskKey, title }: { taskKey: `0x${string}`; title: s
   const [phase, setPhase] = useState<Phase>({ kind: "idle" })
   const [open, setOpen] = useState(false)
   const settled = useRef(false)
+  const restartRef = useRef(false)
 
   // Already holding a slot on this phone? Go straight to the challenge.
   useEffect(() => {
@@ -58,8 +62,9 @@ export function ClaimFlow({ taskKey, title }: { taskKey: `0x${string}`; title: s
     if (mine) setPhase({ kind: "done", claim: mine })
   }, [taskKey])
 
-  async function start() {
+  async function start(restart = false) {
     settled.current = false
+    restartRef.current = restart
     try {
       setPhase({ kind: "wallet" })
       const account = await ensureAccount()
@@ -99,20 +104,72 @@ export function ClaimFlow({ taskKey, title }: { taskKey: `0x${string}`; title: s
     const r = await fetch("/api/claims", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ taskKey, wallet: account.address, signature, idkit: result }),
+      body: JSON.stringify({
+        taskKey,
+        wallet: account.address,
+        signature,
+        idkit: result,
+        restart: restartRef.current,
+      }),
     })
-    const j = (await r.json()) as ClaimResponse | ApiError
+    const j = (await r.json()) as ClaimResponse | ClaimError
     if (!r.ok || "error" in j) {
       const message = "error" in j ? j.error.message : "Couldn't save your slot"
       settled.current = true
-      setPhase({ kind: "idle" })
-      toast.error(message)
+      const code = "error" in j ? j.error.code : "error"
+      if (code === "already_submitted" || code === "already_claimed") {
+        const d = "error" in j ? j.error.details : undefined
+        setPhase({
+          kind: "blocked",
+          code,
+          message,
+          submissionId: d?.submissionId ?? null,
+          canRestart: Boolean(d?.canRestart),
+        })
+      } else {
+        setPhase({ kind: "idle" })
+        toast.error(message)
+      }
       throw new Error(message)
     }
+    for (const old of readClaims().filter((c) => c.taskKey.toLowerCase() === taskKey.toLowerCase()))
+      dropClaim(old.claimKey)
     saveClaim({ ...j, title, savedAt: Date.now() })
     settled.current = true
     setPhase({ kind: "done", claim: j })
     if (j.resumed) toast("You already hold a slot on this task. Here's your challenge again.")
+    else if (restartRef.current) toast.success("Started over with a fresh slot and a new challenge.")
+  }
+
+  if (phase.kind === "blocked") {
+    return (
+      <div className="space-y-3" role="status">
+        <div>
+          <div className="text-[15px] font-medium">{phase.message}</div>
+          <p className="mt-1 text-[13.5px] text-muted-foreground">
+            {phase.code === "already_submitted"
+              ? "One clip per person per task. You can follow its checks below."
+              : "Each person gets one slot per task."}
+            {phase.canRestart
+              ? " For a fresh run, start over: your old slot is released and you get a new challenge."
+              : ""}
+          </p>
+        </div>
+        <div className="grid gap-2">
+          {phase.submissionId ? (
+            <Button asChild variant="outline" size="xl" className="w-full">
+              <Link href={`/submissions/${phase.submissionId}`}>See your clip</Link>
+            </Button>
+          ) : null}
+          {phase.canRestart ? (
+            <Button variant="signal" size="xl" className="w-full" onClick={() => start(true)}>
+              <RotateCcw />
+              Start over with World ID
+            </Button>
+          ) : null}
+        </div>
+      </div>
+    )
   }
 
   if (phase.kind === "done") {
@@ -132,6 +189,16 @@ export function ClaimFlow({ taskKey, title }: { taskKey: `0x${string}`; title: s
             Start recording
           </Link>
         </Button>
+        <button
+          type="button"
+          onClick={() => {
+            dropClaim(c.claimKey)
+            setPhase({ kind: "idle" })
+          }}
+          className="w-full py-1 text-center text-[13px] text-muted-foreground underline underline-offset-4"
+        >
+          Not you, or need a new challenge? Claim again
+        </button>
       </div>
     )
   }
@@ -152,7 +219,7 @@ export function ClaimFlow({ taskKey, title }: { taskKey: `0x${string}`; title: s
         variant="signal"
         size="xl"
         className="w-full"
-        onClick={start}
+        onClick={() => start(false)}
         disabled={busy}
         aria-live="polite"
       >
