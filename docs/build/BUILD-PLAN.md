@@ -1,4 +1,6 @@
-# ADX — Build plan
+# ADX — Build plan (tracker)
+
+> The full phase-by-phase plan with sub-phases and technical detail is §19 of `SYSTEM-ARCHITECTURE.md`. This file is the live checklist.
 
 Deadline: **Sat 7 Nov 09:00 IST** (no late entries). Feature freeze Fri 23:00. Video recorded by Sat 05:00.
 
