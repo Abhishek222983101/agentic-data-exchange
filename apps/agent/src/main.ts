@@ -9,6 +9,7 @@ import { liveVerifiers, safeExtend } from "@adx/shared/arkiv"
 import { approvalValid, DEFAULT_POLICY, type Decision, decide } from "@adx/shared/policy"
 import { ExpirationTime } from "@arkiv-network/sdk"
 import { pollApproval, startApproval } from "./approval"
+import { kitUsdcBalance } from "./hedera-kit"
 import { record } from "./log"
 import { discover, payFor } from "./pay"
 
@@ -47,12 +48,47 @@ async function candidates(): Promise<Array<{ submissionKey: string; jobId: strin
 const failures = new Map<string, { count: number; nextTry: number }>()
 const BACKOFF_MS = [30_000, 120_000, 300_000]
 
+// USDC pre-check (Hedera Agent Kit balance query on the buyer account pay.ts pays from). Read-only: it can
+// only hold a payment back, never start one. If the query itself fails we pay as before, so a mirror-node
+// hiccup can't stall the demo. A low balance is logged once per clip and retried every minute.
+const LOW_FUNDS_RETRY_MS = 60_000
+const lowFundsLogged = new Set<string>()
+
+async function hasEnoughUsdc(amountUsd: number): Promise<{ ok: boolean; balance?: number }> {
+  const buyer = process.env.HEDERA_BUYER_ID
+  if (!buyer) return { ok: true }
+  try {
+    const balance = await kitUsdcBalance(buyer)
+    return { ok: balance >= amountUsd, balance }
+  } catch (e) {
+    console.error(JSON.stringify({ evt: "balance_check_error", msg: (e as Error).message?.slice(0, 200) }))
+    return { ok: true }
+  }
+}
+
 async function pay(
   submissionKey: string,
   decision: Decision,
   approval: "auto" | "agent-pass",
   offer: { amountUsd: number; payTo: string },
 ) {
+  const funds = await hasEnoughUsdc(offer.amountUsd)
+  if (!funds.ok) {
+    const f = failures.get(submissionKey) ?? { count: 0, nextTry: 0 }
+    f.nextTry = Date.now() + LOW_FUNDS_RETRY_MS
+    failures.set(submissionKey, f)
+    if (!lowFundsLogged.has(submissionKey)) {
+      lowFundsLogged.add(submissionKey)
+      await record(db, "skipped", {
+        submissionKey,
+        amount: offer.amountUsd,
+        balance: funds.balance,
+        reason: "Not enough USDC in the agent's account",
+      })
+    }
+    return
+  }
+  lowFundsLogged.delete(submissionKey)
   try {
     const paid = await payFor(`${BASE}/api/x402/clip/${submissionKey}`, decision, approval)
     failures.delete(submissionKey)
