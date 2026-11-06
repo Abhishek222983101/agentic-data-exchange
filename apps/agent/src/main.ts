@@ -42,6 +42,11 @@ async function candidates(): Promise<Array<{ submissionKey: string; jobId: strin
   }))
 }
 
+// Failed payments back off (30 s, 2 min, 5 min) and give up after 3 tries; only the first failure and the
+// final give-up are logged, so a broken payment can't flood the feed or the spend log.
+const failures = new Map<string, { count: number; nextTry: number }>()
+const BACKOFF_MS = [30_000, 120_000, 300_000]
+
 async function pay(
   submissionKey: string,
   decision: Decision,
@@ -50,6 +55,7 @@ async function pay(
 ) {
   try {
     const paid = await payFor(`${BASE}/api/x402/clip/${submissionKey}`, decision, approval)
+    failures.delete(submissionKey)
     await record(db, "paid", {
       submissionKey,
       amount: offer.amountUsd,
@@ -59,12 +65,31 @@ async function pay(
       ms: paid.ms,
     })
   } catch (e) {
-    await record(db, "failed", { submissionKey, amount: offer.amountUsd, reason: (e as Error).message })
+    const f = failures.get(submissionKey) ?? { count: 0, nextTry: 0 }
+    f.count += 1
+    f.nextTry = Date.now() + (BACKOFF_MS[f.count - 1] ?? 600_000)
+    failures.set(submissionKey, f)
+    const reason = (e as Error).message.slice(0, 200)
+    if (f.count === 1)
+      await record(db, "failed", { submissionKey, amount: offer.amountUsd, reason, attempt: 1 })
+    if (f.count >= 3) {
+      await db.execute(
+        sql`insert into payments (submission_key, amount, pay_to, status) values (${submissionKey}, ${offer.amountUsd}, ${offer.payTo}, 'declined') on conflict (submission_key) do update set status = 'declined'`,
+      )
+      await record(db, "failed", {
+        submissionKey,
+        amount: offer.amountUsd,
+        reason: `Gave up after 3 tries: ${reason}`,
+        attempt: 3,
+      })
+    }
   }
 }
 
 async function handleNew() {
   for (const c of await candidates()) {
+    const f = failures.get(c.submissionKey)
+    if (f && Date.now() < f.nextTry) continue
     const url = `${BASE}/api/x402/clip/${c.submissionKey}`
     const offer = await discover(url).catch(() => null)
     if (!offer) continue

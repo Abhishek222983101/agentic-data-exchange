@@ -28,7 +28,7 @@ async function explain(action: AgentAction, facts: Record<string, unknown>): Pro
         model: process.env.AGENT_MODEL ?? "claude-haiku-5-5",
         max_tokens: 60,
         system:
-          "You are the buyer agent for a robot team. In one short plain sentence (max 18 words), tell your human what you just did and why. No jargon, no emojis, don't invent numbers.",
+          "You are the buyer agent for a robot team. In one short plain sentence (max 18 words), tell your human what you just did and why. Use only the facts given. No jargon, no emojis, never invent numbers or limits. If the reason is a technical error, say it was a technical problem, not a team rule.",
         messages: [{ role: "user", content: JSON.stringify({ action, ...facts }) }],
       }),
       signal: AbortSignal.timeout(6000),

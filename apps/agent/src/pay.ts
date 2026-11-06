@@ -37,7 +37,15 @@ function client(): typeof fetch {
   const key = process.env.HEDERA_BUYER_KEY
   if (!id || !key) throw new Error("HEDERA_BUYER_ID / HEDERA_BUYER_KEY not set")
   const signer = createClientHederaSigner(id, PrivateKey.fromStringECDSA(key), { network: "hedera:testnet" })
-  payFetch = wrapFetchWithPayment(fetch, new x402Client().register("hedera:*", new ExactHederaScheme(signer)))
+  // The x402 client caps each payment at $1 by default. Our own policy (packages/shared/policy.ts) is the
+  // real limit, so the client-side cap is set to the policy's hard cap, not removed.
+  const hardCap = process.env.AGENT_HARD_CAP ?? "10"
+  payFetch = wrapFetchWithPayment(
+    fetch,
+    new x402Client()
+      .register("hedera:*", new ExactHederaScheme(signer))
+      .setSpendControls({ maxAmountPerPayment: `$${hardCap}` }),
+  )
   return payFetch
 }
 
