@@ -9,6 +9,7 @@ Deadline: **Sat 7 Nov 09:00 IST** (no late entries). Feature freeze Fri 23:00. V
 |---|---|---|---|
 | 0 | Proofs: Arkiv write, x402 settle, Swarm upload, Bee node + batch | Fri 07:00–10:00 | ✅ done (see PROOFS.md) |
 | 1 | `packages/shared`: Arkiv schemas, write guard, signer queues, env validation | Fri 10:30–12:00 | Schemas compile; guard unit tests pass; seed script writes the verifier listing |
+| 1b | **P-UI (added 6 Nov, frontend first):** every screen from `reference/03-APP-FLOW.md` in the final design, real Arkiv data where it exists, typed data adapters with sample fixtures (visible "demo data" badge) elsewhere; later phases swap each adapter for the real call | Fri after P1 | Whole app clickable on a phone |
 | 2 | Contributor flow in `apps/web`: task board (Arkiv read), claim with IDKit, recorder, presigned upload | Fri 12:00–15:00 | A phone claims, records and uploads; duplicate claim rejected |
 | 3 | `apps/worker` on Railway: frames, dHash, Arkiv dedup, Claude/Gemini verdict, encrypt → our Bee node, Arkiv writes | Fri 13:00–16:30 | Uploaded clip ends with `adx.submission` + `adx.verification` and a Swarm ref |
 | 4 | Payments: x402 endpoint + after-settle hook, per-request payTo test, licence create + transfer | Fri 16:00–18:30 | Agent pays, receipt + licence on Arkiv, key released |
