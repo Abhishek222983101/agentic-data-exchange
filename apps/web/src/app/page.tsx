@@ -15,7 +15,7 @@ const LOOP = [
   { who: "AI verifier", what: "watches the clip and points to the second each step happens" },
   { who: "Swarm", what: "stores the clip encrypted, so nobody sees it before paying" },
   { who: "Agent", what: "pays you in USDC on Hedera, automatically under its budget" },
-  { who: "You", what: "own the licence on Arkiv and can withdraw it any time" },
+  { who: "You", what: "own the licence on Arkiv, held by your own wallet" },
 ]
 
 export default function Home() {
@@ -73,9 +73,9 @@ export default function Home() {
           World ID proves you're a unique human without telling us who you are. A dataset of 100 clips really
           has 100 people in it.
         </Principle>
-        <Principle title="You keep control">
-          Your licence is a record you own on Arkiv. Withdraw it and buyers' agents drop your clip on their
-          next pass.
+        <Principle title="You own the licence">
+          Your licence is a record on Arkiv owned by your wallet, not a row in our database. Nobody else can
+          change it.
         </Principle>
         <Principle title="Spending a prompt can't bypass">
           Agents pay only within a fixed budget. Anything bigger waits for a human to approve it with World

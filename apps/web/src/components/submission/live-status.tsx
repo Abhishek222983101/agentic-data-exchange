@@ -74,7 +74,7 @@ export function LiveStatus({ id, initial }: { id: string; initial: View }) {
             +{Number(view.payment.amount)} USDC
           </div>
           <p className="mt-2 text-[14px] opacity-90">
-            The robot team's agent bought your clip. You own its licence and can withdraw it any time.
+            The robot team's agent bought your clip. Its licence is now owned by your wallet on Arkiv.
           </p>
           <div className="mt-3 flex flex-wrap gap-2 [&_a]:border-white/40 [&_a]:text-white">
             {view.payment.hederaTx ? (
