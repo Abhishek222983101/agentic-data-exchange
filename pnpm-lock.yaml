@@ -32,6 +32,10 @@ importers:
       viem:
         specifier: 2.57.16
         version: 2.57.16(typescript@5.9.3)(zod@4.6.7)
+    devDependencies:
+      ethers:
+        specifier: '6'
+        version: 6.16.0
 
   apps/web:
     dependencies:

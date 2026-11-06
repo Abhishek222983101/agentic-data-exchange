@@ -20,5 +20,8 @@
     "@x402/hedera": "2.30.0",
     "express": "5",
     "viem": "2.57.16"
+  },
+  "devDependencies": {
+    "ethers": "6"
   }
 }
