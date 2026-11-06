@@ -64,6 +64,49 @@ importers:
         specifier: 5.1.0
         version: 5.1.0(@types/node@22.7.5)(vite@8.3.6(@types/node@22.7.5)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15))
 
+  apps/agent:
+    dependencies:
+      '@adx/db':
+        specifier: workspace:^
+        version: link:../../packages/db
+      '@adx/shared':
+        specifier: workspace:^
+        version: link:../../packages/shared
+      '@arkiv-network/sdk':
+        specifier: 1.0.1
+        version: 1.0.1(typescript@5.9.3)(viem@2.57.16(typescript@5.9.3)(zod@4.6.7))
+      '@hiero-ledger/sdk':
+        specifier: 2.90.1
+        version: 2.90.1
+      '@x402/core':
+        specifier: 2.30.0
+        version: 2.30.0
+      '@x402/fetch':
+        specifier: 2.30.0
+        version: 2.30.0
+      '@x402/hedera':
+        specifier: 2.30.0
+        version: 2.30.0(protobufjs@8.6.6)
+      jose:
+        specifier: '6'
+        version: 6.2.15
+      tsx:
+        specifier: 4.23.15
+        version: 4.23.15
+      viem:
+        specifier: 2.57.16
+        version: 2.57.16(typescript@5.9.3)(zod@4.6.7)
+      zod:
+        specifier: 4.6.7
+        version: 4.6.7
+    devDependencies:
+      '@types/node':
+        specifier: '22'
+        version: 22.7.5
+      typescript:
+        specifier: 5.9.3
+        version: 5.9.3
+
   apps/web:
     dependencies:
       '@adx/db':
@@ -3198,6 +3241,9 @@ packages:
 
   jose@5.10.0:
     resolution: {integrity: sha512-s+3Al/p9g32Iq+oqXxkW//7jk2Vig6FF1CFqzVXoTUXt2qz89YWbL+OwS17NFYEvxC35n0FKeGO2LGYSxeM2Gg==}
+
+  jose@6.2.15:
+    resolution: {integrity: sha512-qdF6ewcZARtef63fJ9AKKZPgxw+t7USH6HLXYcD4CrdmSvDp79rpJSPFEKc90QBeGS63u1KQtN2MZQHC0yDIzA==}
 
   joycon@3.1.1:
     resolution: {integrity: sha512-34wB/Y7MW7bzjKRjUKTa46I2Z7eV62Rkhva+KkopW7Qvv/OSWBqvkSY7vusOPrNuZcUG3tApvdVgNB8POj3SPw==}
@@ -7055,6 +7101,8 @@ snapshots:
   jiti@2.7.0: {}
 
   jose@5.10.0: {}
+
+  jose@6.2.15: {}
 
   joycon@3.1.1: {}
 

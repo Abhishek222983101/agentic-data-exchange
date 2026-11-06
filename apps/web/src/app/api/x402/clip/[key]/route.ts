@@ -8,7 +8,14 @@ import { HTTPFacilitatorClient } from "@x402/core/server"
 import { ExactHederaScheme } from "@x402/hedera/exact/server"
 import { withX402, x402ResourceServer } from "@x402/next"
 import { after, type NextRequest, NextResponse } from "next/server"
-import { markFailed, recordSettled, reserveSale, type Sale, saleFor } from "@/lib/server/sales"
+import {
+  approvedByAgentPass,
+  markFailed,
+  recordSettled,
+  reserveSale,
+  type Sale,
+  saleFor,
+} from "@/lib/server/sales"
 
 const NETWORK = "hedera:testnet"
 const FACILITATOR = process.env.FACILITATOR_URL ?? "https://x402.org/facilitator"
@@ -78,7 +85,8 @@ export async function GET(req: NextRequest) {
         success?: boolean
       }
       if (settle.success !== false && settle.transaction) {
-        const approval = req.headers.get("x-paradigm-approval") === "agent-pass" ? "agent-pass" : "auto"
+        // Never trust a client header for this: "agent-pass" only if an approved Agent Pass record exists.
+        const approval = (await approvedByAgentPass(sale.submissionKey)) ? "agent-pass" : "auto"
         after(() =>
           recordSettled(sale, settle.transaction as string, approval).catch((e) =>
             console.error("[x402] record failed", e),

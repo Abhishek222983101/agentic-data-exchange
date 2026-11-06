@@ -67,3 +67,10 @@ app.onError((e, c) => {
 serve({ fetch: app.fetch, port: env.PORT, hostname: "::" }, (i) =>
   console.log(`worker listening on ${i.port}`),
 )
+
+if (env.GEMINI_API_KEY && process.env.WORKER_PIPELINE !== "off") {
+  startRunner(db, { beeUrl: env.BEE_URL, batchId: env.SWARM_BATCH_ID, geminiKey: env.GEMINI_API_KEY })
+  console.log("pipeline runner started")
+} else {
+  console.log("pipeline runner disabled (no GEMINI_API_KEY or WORKER_PIPELINE=off)")
+}

@@ -2,7 +2,7 @@
 //   saleFor()         what's for sale at this path: accepted? price? who gets paid? (no payment yet)
 //   recordSettled()   runs only after Hedera settlement: receipt + licence on Arkiv, payment row updated
 import "server-only"
-import { claimsPrivate, clipKeys, contributors, db, eq, jobs, payments, sql } from "@adx/db"
+import { approvals, claimsPrivate, clipKeys, contributors, db, eq, jobs, payments, sql } from "@adx/db"
 import { S, safeChangeOwner, safeCreate, taskByKey, WRITERS } from "@adx/shared/arkiv"
 import { sha256Hex } from "@adx/shared/crypto"
 import { ExpirationTime } from "@arkiv-network/sdk"
@@ -165,4 +165,16 @@ export async function recordSettled(sale: Sale, hederaTx: string, approval: stri
     }),
   )
   return { receiptKey: receipt.entityKey, licenceKey: licence?.entityKey ?? null }
+}
+
+/** True only if a human approved this exact clip's payment with World Agent Pass. */
+export async function approvedByAgentPass(submissionKey: string): Promise<boolean> {
+  const [a] = await db()
+    .select({ id: approvals.id })
+    .from(approvals)
+    .where(
+      sql`lower(${approvals.submissionKey}) = ${submissionKey.toLowerCase()} and ${approvals.status} = 'approved'`,
+    )
+    .limit(1)
+  return Boolean(a)
 }
