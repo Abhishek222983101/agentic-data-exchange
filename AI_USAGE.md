@@ -11,3 +11,4 @@ ETHGlobal requires us to say which parts AI wrote or assisted.
 - **P1 Arkiv core:** Claude Code wrote the seed and roundtrip scripts, the Swarm helper, the web data layer, task board, task detail and explorer pages, and the security fixes; the team ran the live checks.
 - **P-UI:** Claude Code wrote the landing, status/verdict, me, console, approve, proofs and record screens, plus the pipeline/verdict components and typed sample data.
 - **P2 Identity:** Claude Code wrote the wallet vault, World ID server checks, claim service, API routes, claim flow UI, Hedera account helper, the alias spike and the claim integration test.
+- **P3 Capture and upload:** Claude Code wrote the recorder, upload helpers, record routes, worker upload server, Dockerfile, Railway service setup and the upload/recorder tests.

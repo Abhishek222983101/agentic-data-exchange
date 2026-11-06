@@ -15,7 +15,7 @@
 | P1 Arkiv core | Public data layer: 8 record types, safety guard, write queue, seed task, live task board + explorer | ✅ done |
 | P-UI | Every screen in final design, clickable on a phone | ✅ done |
 | P2 Identity | Embedded wallet (passkey), World ID claim, one-human-per-slot | ✅ done (real-phone World ID test pending) |
-| P3 Capture & upload | In-browser camera recorder, worker upload server on Railway | ⏳ next |
+| P3 Capture & upload | In-browser camera recorder, worker upload server on Railway | ✅ done (real-phone test pending) |
 
 **Shipping rule:** nothing reaches `main` unless `pnpm verify` passes (typecheck + lint + unit tests + production build). Each phase ends with one push to `main`, which Vercel deploys.
 
@@ -189,6 +189,42 @@ Shared pieces: `PipelineSteps` (live check list, screen-reader announced), `Verd
 
 **Manual step for the team:** claim the towel task once from a real phone with World App (or simulator.worldcoin.org in staging), then again with the same World ID to see "You already hold a slot".
 
+### P3 Capture and upload ✅ (Fri 6 Nov, 17:15–17:50 IST)
+
+**Goal:** after claiming, the contributor films 15–30 s in the browser and the clip reaches our worker safely.
+
+**Concepts**
+- **No app install:** the browser records with `MediaRecorder` (MP4/H.264 on iPhone and Chrome, WebM elsewhere). It records in 1-second chunks, which avoids a known iPhone freeze after ~15 s.
+- **Liveness on screen:** the word and finger count stay pinned at the top while filming, so the clip proves it was made live, for this claim.
+- **Upload token:** each claim gets a one-time pass valid for 15 minutes. It's sent in a header (never in the link, so it never lands in logs). It's used up only when an upload fully succeeds, so a dropped connection can retry.
+- **Worker:** a small server on Railway receives the clip, checks it really is a video, caps it at 60 MB, and queues it for checking (P4).
+
+**What was built**
+| Piece | File(s) | Plain words |
+|---|---|---|
+| Recorder | `apps/web/src/components/recorder/recorder.tsx`, `lib/recorder.ts` | Full-screen camera, 3-2-1, timer ring (orange until 15 s, then green), stop only after 15 s, auto-stop at 30 s, playback, Retake / Submit |
+| Upload with progress | `lib/recorder.ts` (`uploadWithRetry`) | Real progress bar; reconnects up to 3 times; clear messages for "already uploaded" or "window passed" |
+| Record routes | `app/record/[claim]`, `app/record` | `/record` jumps straight to the claim held on this phone |
+| Worker upload server | `apps/worker/src/upload.ts`, `main.ts` | Token check → stream to disk with a size cap → video check → token used up atomically → job queued + "Clip received" event |
+| Container | `apps/worker/Dockerfile` | Node 22 + ffmpeg, runs as a non-root user; refuses to start if settings are missing (lists names only) |
+
+**Proof it works**
+- `pnpm test:upload` (live worker + Neon): 11/11. Valid → accepted; reused → refused; 70 MB → refused; garbage or forged token → refused; wrong type or not a video → refused; CORS allows only our site.
+- `pnpm test:record` (real Chrome with a fake camera and mic): 9/9. Camera opens, stop is locked before 15 s, a 17 s MP4 is recorded, uploaded in ~1.3 s, the status page opens, and the job is queued in Neon.
+- The worker image builds and boots; it's deployed on Railway at `worker-production-e76e.up.railway.app`.
+
+**Security pass (P3)**
+- Upload tokens are single-use, expire after 15 min, are HMAC-signed, are stored hashed, and travel in a header.
+- Size capped both by header and while streaming; the first bytes must be a real MP4/WebM header.
+- Clips are saved with random names (no user input in paths), owner-only permissions, inside a container running as a non-root user.
+- After an early rejection the worker closes the connection, so a half-sent upload can't confuse the next request.
+- CORS only allows the Paradigm site.
+
+**Manual steps for the team**
+1. `bash scripts/railway-worker-env.sh`: gives the worker its secrets (names only printed). Then `curl https://worker-production-e76e.up.railway.app/health`.
+2. `bash scripts/vercel-env.sh`: gives the website its secrets, including the worker URL.
+3. On a real iPhone and an Android phone: claim → record ≥ 18 s → submit.
+
 ---
 
 ## How to check things yourself
@@ -198,6 +234,9 @@ pnpm test           # unit tests (guard, tokens, crypto, challenge, rubric)
 pnpm seed:arkiv     # publish the verifier listing + demo task (idempotent)
 ARKIV_NS=adx-test pnpm arkiv:roundtrip   # live test of all 8 record types
 pnpm test:claims    # live claim rules: one human per slot, no overbooking, forged proofs refused
+pnpm worker:dev     # run the worker locally on :8099
+pnpm test:upload    # upload rules against the running worker
+pnpm test:record    # real Chrome + fake camera: record → upload → status page
 pnpm verify         # the full gate that runs before every push to main
 pnpm dev            # run the website locally on http://localhost:3000
 ```

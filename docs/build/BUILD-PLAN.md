@@ -36,6 +36,9 @@ Every phase ends with `pnpm verify` (typecheck + lint + unit tests + production 
 | P2.2 IDKit RP signing + widget | `/api/world/rp-signature` signs only `claim-task`; widget opens (staging) | Passed; simulator proof = manual step |
 | P2.3 Claim API | first claim ok; same human → 409 / resume; full → 409; race refused; forged proofs 400 | Passed (`pnpm test:claims`, 11/11 live) |
 | P2.4 Contributor Hedera account | alias + unlimited auto-assoc; 0.01 USDC lands | Passed (HED-03) |
+| P3.1 Recorder | back camera, challenge pinned, 15–30 s, preview, retake; records past 15 s | Passed in Chrome with fake camera (17 s MP4/H.264); real iPhone test = manual |
+| P3.2 Worker upload server | valid → 202; reused → 409; 70 MB → 413; bad token 401; wrong type / not video 415; CORS | Passed (`pnpm test:upload`, 11/11) |
+| P3.3 Upload UX | XHR progress, 3 retries, redirect to status page | Passed (`pnpm test:record`, 9/9 end to end) |
 | P-UI All screens | every route 200, sample regions badged, real data where it exists | Passed (local prod build, screenshots) |
 | P1.5 First reads | `/tasks` shows the seeded task; `/explorer` returns the same key | Passed locally; live URL needs Vercel env (`scripts/vercel-env.sh`) |
 

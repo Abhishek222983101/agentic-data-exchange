@@ -24,7 +24,10 @@
     "verify": "pnpm typecheck && pnpm lint && pnpm test && pnpm build",
     "arkiv:roundtrip": "tsx --env-file=.env scripts/arkiv-roundtrip.ts",
     "hedera:alias-spike": "tsx --env-file=.env scripts/hedera-alias-spike.ts",
-    "test:claims": "cd apps/web && ARKIV_NS=adx-test tsx --conditions=react-server --env-file=../../.env test/claims.int.mts"
+    "test:claims": "cd apps/web && ARKIV_NS=adx-test tsx --conditions=react-server --env-file=../../.env test/claims.int.mts",
+    "test:upload": "cd apps/worker && tsx --env-file=../../.env test/upload.int.ts",
+    "worker:dev": "cd apps/worker && PORT=8099 CLIP_DIR=/tmp/adx-clips tsx --env-file=../../.env src/main.ts",
+    "test:record": "cd apps/web && tsx --env-file=../../.env test/record.e2e.mts"
   },
   "dependencies": {
     "@adx/db": "workspace:^",
@@ -43,6 +46,7 @@
     "@types/express": "5",
     "@types/node": "22",
     "ethers": "6",
+    "playwright-core": "1.65.0",
     "tsx": "4.23.15",
     "typescript": "5.9.3",
     "vitest": "5.1.0"

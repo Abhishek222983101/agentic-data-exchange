@@ -3,13 +3,15 @@ import type { Metadata } from "next"
 import Link from "next/link"
 import { Page } from "@/components/shell/page-header"
 import { Button } from "@/components/ui/button"
+import { ActiveClaimRedirect } from "./active-claim-redirect"
 
 export const metadata: Metadata = { title: "Record" }
 
-// P3: when this device holds an active claim, this page jumps straight to /record/[claim].
+// When this phone holds a live claim, ActiveClaimRedirect jumps straight to /record/[claim].
 export default function RecordPage() {
   return (
     <Page>
+      <ActiveClaimRedirect />
       <div className="mx-auto flex max-w-sm flex-col items-center pt-20 pb-10 text-center">
         <span className="grid size-16 place-items-center rounded-full bg-sunken">
           <Video className="size-7 text-muted-foreground" />
