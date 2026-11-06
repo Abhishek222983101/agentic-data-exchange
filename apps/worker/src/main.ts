@@ -93,9 +93,11 @@ app.get("/swarm/:ref/bytes", async (c) => {
   const ref = c.req.param("ref")
   if (!/^[0-9a-f]{64}$/.test(ref))
     return c.json({ error: { code: "invalid", message: "Not a Swarm reference" } }, 400)
-  const r = await fetch(`${env.BEE_URL}/bytes/${ref}`, { signal: AbortSignal.timeout(60_000) }).catch(
-    () => null,
-  )
+  // Time out only while waiting for Bee to start answering; the body itself may stream slowly from peers.
+  const ctl = new AbortController()
+  const timer = setTimeout(() => ctl.abort(), 45_000)
+  const r = await fetch(`${env.BEE_URL}/bytes/${ref}`, { signal: ctl.signal }).catch(() => null)
+  clearTimeout(timer)
   if (!r?.ok || !r.body) return c.json({ error: { code: "not_found", message: "Not found on Swarm" } }, 404)
   const len = Number(r.headers.get("content-length") ?? 0)
   if (len > 70 * 1024 * 1024) return c.json({ error: { code: "too_large", message: "Too large" } }, 413)
