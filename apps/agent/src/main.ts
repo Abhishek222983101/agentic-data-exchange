@@ -192,7 +192,9 @@ let lastHeartbeat = 0
 async function heartbeat() {
   if (Date.now() - lastHeartbeat < 60 * 60_000) return
   lastHeartbeat = Date.now()
-  const listings = await liveVerifiers("towel-fold").catch(() => [])
+  const listings = (
+    await Promise.all(["towel-fold", "shirt-fold"].map((s) => liveVerifiers(s).catch(() => [])))
+  ).flat()
   for (const l of listings)
     await safeExtend("verifier", l.key, ExpirationTime.fromHours(24)).catch(() => undefined)
   console.log(JSON.stringify({ evt: "heartbeat", listings: listings.length }))

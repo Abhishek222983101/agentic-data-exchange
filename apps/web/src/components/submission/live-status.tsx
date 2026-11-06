@@ -17,11 +17,24 @@ type View = {
   receivedAt: string
   challenge: { word: string; fingers: number } | null
   events: PipelineEvent[]
+  payment: {
+    status: string
+    amount: string
+    hederaTx: string | null
+    receiptKey: string | null
+    licenceKey: string | null
+    payTo: string
+  } | null
 }
 
 export function LiveStatus({ id, initial }: { id: string; initial: View }) {
   const [view, setView] = useState<View>(initial)
-  const done = view.events.some((e) => e.step === "done") || view.status === "failed"
+  const checked = view.events.some((e) => e.step === "done") || view.status === "failed"
+  const payFinal =
+    view.payment &&
+    (view.payment.status === "declined" || (view.payment.status === "settled" && view.payment.licenceKey))
+  // After an accept, keep watching until the agent has paid (or a human declined).
+  const done = checked && (view.status !== "accepted" || Boolean(payFinal))
 
   useEffect(() => {
     if (done) return
@@ -54,6 +67,45 @@ export function LiveStatus({ id, initial }: { id: string; initial: View }) {
         </div>
       ) : null}
 
+      {view.payment?.status === "settled" ? (
+        <section className="rounded-[20px] bg-success p-5 text-white" aria-live="polite">
+          <div className="text-[13px] opacity-90">Paid to you</div>
+          <div className="mt-1 font-mono text-[36px] leading-none font-semibold tabular">
+            +{Number(view.payment.amount)} USDC
+          </div>
+          <p className="mt-2 text-[14px] opacity-90">
+            The robot team's agent bought your clip. You own its licence and can withdraw it any time.
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2 [&_a]:border-white/40 [&_a]:text-white">
+            {view.payment.hederaTx ? (
+              <ProofLink
+                kind="hedera"
+                href={links.hashscanTx(view.payment.hederaTx)}
+                label="Payment on Hedera"
+              />
+            ) : null}
+            {view.payment.licenceKey ? (
+              <ProofLink
+                kind="arkiv"
+                href={links.arkivEntity(view.payment.licenceKey)}
+                label="Your licence on Arkiv"
+              />
+            ) : null}
+            {view.payment.receiptKey ? (
+              <ProofLink
+                kind="arkiv"
+                href={links.arkivEntity(view.payment.receiptKey)}
+                label="Receipt on Arkiv"
+              />
+            ) : null}
+          </div>
+        </section>
+      ) : view.status === "accepted" && checked && view.payment?.status !== "declined" ? (
+        <div role="status" className="flex items-center gap-3 rounded-[18px] bg-sunken p-4 text-[14px]">
+          <Loader2 className="size-4 shrink-0 animate-spin text-muted-foreground" />
+          The robot team's agent is paying for your clip…
+        </div>
+      ) : null}
       {summary ? <VerdictCard v={summary} /> : null}
       {!summary && done && failure ? (
         <section className="rounded-[20px] border-2 border-danger/40 bg-card p-5">

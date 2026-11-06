@@ -45,3 +45,23 @@ export const TOWEL_RUBRIC: Rubric = {
   framing: "top_down",
   durationS: { min: 15, max: 30 },
 }
+
+/** Second demo task, priced above the agent's 5 USDC limit: every accepted clip needs a human's Agent Pass approval. */
+export const SHIRT_RUBRIC: Rubric = {
+  v: 1,
+  skill: "shirt-fold",
+  summary:
+    "Fold a T-shirt into a neat rectangle on a flat surface, filmed from directly above. Our robot loses track of the sleeves, so start with the shirt spread flat.",
+  setup: [
+    "Phone held above the table, camera pointing straight down",
+    "Both hands and the whole shirt in frame",
+    "Good light, plain surface",
+  ],
+  steps: [
+    { name: "fold_sides", label: "Fold the sides in", hint: "Bring each side and sleeve to the middle" },
+    { name: "fold_bottom", label: "Fold the bottom up", hint: "Fold the bottom edge up to the collar" },
+    { name: "smooth", label: "Smooth it flat", hint: "Run a palm across the folded shirt" },
+  ],
+  framing: "top_down",
+  durationS: { min: 15, max: 30 },
+}

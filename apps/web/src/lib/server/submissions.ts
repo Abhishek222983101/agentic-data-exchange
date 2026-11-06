@@ -1,7 +1,7 @@
 // Public view of one submission for its status page. Only display-safe fields: no wallet, no nullifier,
 // no file path, no keys. The id is a random UUID the uploader received.
 import "server-only"
-import { asc, claimsPrivate, db, eq, events, jobs } from "@adx/db"
+import { asc, claimsPrivate, db, eq, events, jobs, payments, sql } from "@adx/db"
 import { claimByKey } from "@adx/shared/arkiv"
 import { decodeChallenge } from "@adx/shared/challenge"
 import type { PipelineEvent } from "@adx/shared/events"
@@ -14,6 +14,14 @@ export type SubmissionView = {
   receivedAt: string
   challenge: { word: string; fingers: number } | null
   events: PipelineEvent[]
+  payment: {
+    status: string
+    amount: string
+    hederaTx: string | null
+    receiptKey: string | null
+    licenceKey: string | null
+    payTo: string
+  } | null
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -30,6 +38,7 @@ export async function submissionView(id: string): Promise<SubmissionView | null>
       status: jobs.status,
       bytes: jobs.bytes,
       challenge: jobs.challenge,
+      submissionKey: jobs.submissionKey,
       createdAt: jobs.createdAt,
     })
     .from(jobs)
@@ -47,7 +56,24 @@ export async function submissionView(id: string): Promise<SubmissionView | null>
     .where(eq(events.scope, `submission:${id}`))
     .orderBy(asc(events.id))
     .limit(50)
+  const [pay] = job.submissionKey
+    ? await d
+        .select()
+        .from(payments)
+        .where(sql`lower(${payments.submissionKey}) = ${job.submissionKey.toLowerCase()}`)
+        .limit(1)
+    : []
   return {
+    payment: pay
+      ? {
+          status: pay.status,
+          amount: pay.amount,
+          hederaTx: pay.hederaTx,
+          receiptKey: pay.receiptKey,
+          licenceKey: pay.licenceKey,
+          payTo: pay.payTo,
+        }
+      : null,
     id: job.id,
     taskKey: job.taskKey,
     status: job.status,
