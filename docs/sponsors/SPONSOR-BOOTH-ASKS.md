@@ -90,3 +90,5 @@ We keep a friction log for the Arkiv feedback track (`docs/sponsors/session-logs
 
 1. Our team wrote a planning brief and did research before hacking started. All code began after Thu 21:00, and the planning docs are disclosed in `docs/planning/`. Does a written plan count as prior "designs" under the from-scratch rule?
 2. Confirm: we can select Hedera, Arkiv (+ Swarm bonus) and World as our 3 partner prizes, and be eligible for every track of each partner?
+
+- **World (new, 6 Nov 17:35):** please enable **Selfie Check** for app `app_b3f89d34c3b6056074a99f171452368e` (RP `rp_15b590932690a33e`). World App currently says "Feature unavailable". Also confirm the `claim-task` action allows one verification per person *per task* (we reuse one action across tasks).

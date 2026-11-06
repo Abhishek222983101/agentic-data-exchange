@@ -5,7 +5,7 @@
 import type { ApiError, ClaimResponse } from "@adx/shared/claim"
 import { claimMessage, claimSignal } from "@adx/shared/claim"
 import type { IDKitResult, RpContext } from "@worldcoin/idkit"
-import { deviceLegacy, selfieCheck } from "@worldcoin/idkit"
+import { deviceLegacy, proofOfHuman, selfieCheck } from "@worldcoin/idkit"
 import { Loader2, ShieldCheck, Video } from "lucide-react"
 import dynamic from "next/dynamic"
 import Link from "next/link"
@@ -34,7 +34,18 @@ type Phase =
   | { kind: "saving" }
   | { kind: "done"; claim: ClaimResponse }
 
-const PRESET = process.env.NEXT_PUBLIC_WORLD_PRESET === "device" ? "device" : "selfie"
+// Which World ID credential we ask for. "device" (default) = any verified World ID (Orb or device),
+// works for everyone today. "human" = World ID 4.0 proof of human (Orb). "selfie" = Selfie Check, which
+// World has to enable for the app first (World App says "Feature unavailable" until then).
+const PRESET_ENV = process.env.NEXT_PUBLIC_WORLD_PRESET
+const PRESET: "device" | "human" | "selfie" =
+  PRESET_ENV === "selfie" || PRESET_ENV === "human" ? PRESET_ENV : "device"
+
+function presetFor(signal: string) {
+  if (PRESET === "selfie") return selfieCheck({ signal })
+  if (PRESET === "human") return proofOfHuman({ signal })
+  return deviceLegacy({ signal })
+}
 
 export function ClaimFlow({ taskKey, title }: { taskKey: `0x${string}`; title: string }) {
   const [phase, setPhase] = useState<Phase>({ kind: "idle" })
@@ -167,12 +178,8 @@ export function ClaimFlow({ taskKey, title }: { taskKey: `0x${string}`; title: s
           action={phase.action}
           rp_context={phase.rp}
           environment={phase.env}
-          allow_legacy_proofs={PRESET === "device"}
-          preset={
-            PRESET === "device"
-              ? deviceLegacy({ signal: claimSignal(taskKey, phase.wallet) })
-              : selfieCheck({ signal: claimSignal(taskKey, phase.wallet) })
-          }
+          allow_legacy_proofs={PRESET !== "selfie"}
+          preset={presetFor(claimSignal(taskKey, phase.wallet))}
           handleVerify={verifyOnServer}
           onSuccess={() => setOpen(false)}
           onError={(code) => {
@@ -181,7 +188,9 @@ export function ClaimFlow({ taskKey, title }: { taskKey: `0x${string}`; title: s
             toast(
               code === "user_rejected"
                 ? "You cancelled World ID. No slot was taken."
-                : "World ID didn't finish. No slot was taken.",
+                : code === "credential_unavailable" || code === "feature_unavailable"
+                  ? "World ID can't run this check for this app yet. No slot was taken."
+                  : "World ID didn't finish. No slot was taken.",
             )
           }}
         />
