@@ -49,7 +49,7 @@ async function Detail({ params }: { params: PageProps<"/tasks/[key]">["params"] 
   const state = task.deadline <= now ? "closed" : task.filled >= task.slots ? "full" : "open"
 
   return (
-    <article className="grid gap-10 pt-4 pb-32 md:pb-8 lg:grid-cols-[1fr_360px]">
+    <article className="grid grid-cols-1 gap-10 pt-4 pb-32 md:pb-8 lg:grid-cols-[1fr_360px]">
       <div className="min-w-0">
         <h1 className="max-w-[22ch] text-[30px] leading-[1.1] font-semibold tracking-[-0.03em] text-balance md:text-[40px]">
           {task.title}
@@ -115,7 +115,7 @@ async function Detail({ params }: { params: PageProps<"/tasks/[key]">["params"] 
       </div>
 
       <aside className="lg:sticky lg:top-20 lg:self-start">
-        <ClaimPanel taskKey={task.key} reward={task.reward} state={state} />
+        <ClaimPanel taskKey={task.key} title={task.title} reward={task.reward} state={state} />
       </aside>
     </article>
   )

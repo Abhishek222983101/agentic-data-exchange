@@ -12,6 +12,9 @@
   "dependencies": {
     "@adx/db": "workspace:^",
     "@adx/shared": "workspace:^",
+    "@hiero-ledger/sdk": "2.90.1",
+    "@worldcoin/idkit": "4.6.0",
+    "@worldcoin/idkit-server": "1.2.0",
     "class-variance-authority": "^0.7.1",
     "cn": "^0.5.2",
     "lucide-react": "^1.70.0",

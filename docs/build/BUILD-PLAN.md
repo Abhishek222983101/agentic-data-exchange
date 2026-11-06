@@ -32,6 +32,10 @@ Every phase ends with `pnpm verify` (typecheck + lint + unit tests + production 
 | P1.2 Write guard | 13 guard unit tests; 64-hex title refused live | Passed |
 | P1.3 Signer queue | 10 parallel creates on one signer, no nonce errors | Passed (10/10, 65 s) |
 | P1.4 Queries + seed | `pnpm seed:arkiv` prints keys + links | Passed (ARK-03) |
+| P2.1 Embedded wallet | passkey PRF wallet created, survives reload; fallback device key | Passed (virtual WebAuthn authenticator with PRF in Chromium) |
+| P2.2 IDKit RP signing + widget | `/api/world/rp-signature` signs only `claim-task`; widget opens (staging) | Passed; simulator proof = manual step |
+| P2.3 Claim API | first claim ok; same human → 409 / resume; full → 409; race refused; forged proofs 400 | Passed (`pnpm test:claims`, 11/11 live) |
+| P2.4 Contributor Hedera account | alias + unlimited auto-assoc; 0.01 USDC lands | Passed (HED-03) |
 | P-UI All screens | every route 200, sample regions badged, real data where it exists | Passed (local prod build, screenshots) |
 | P1.5 First reads | `/tasks` shows the seeded task; `/explorer` returns the same key | Passed locally; live URL needs Vercel env (`scripts/vercel-env.sh`) |
 
@@ -42,8 +46,8 @@ Status: **Not run** · **Passed** · **Failed**. Only mark Passed after actually
 |---|---|---|
 | A1 | Task board reads open tasks from Arkiv (owner-filtered) | Passed (local prod build) |
 | A2 | Claim with World ID succeeds; nullifier stored privately | Not run |
-| A3 | Second claim by the same human rejected | Not run |
-| A4 | Cancelled World ID verification takes no slot | Not run |
+| A3 | Second claim by the same human rejected | Passed (integration test, stubbed World) |
+| A4 | Cancelled World ID verification takes no slot | Passed (browser test) |
 | A5 | Upload from iPhone Safari (≥18 s) and Android Chrome | Not run |
 | A6 | Duplicate clip rejected across buyers | Not run |
 | A7 | Verdict with timestamped evidence written to Arkiv by the verifier wallet | Not run |

@@ -23,7 +23,7 @@ const nextConfig: NextConfig = {
   reactCompiler: true,
   poweredByHeader: false,
   transpilePackages: ["@adx/shared", "@adx/db"],
-  serverExternalPackages: ["pg", "@neondatabase/serverless"],
+  serverExternalPackages: ["pg", "@neondatabase/serverless", "@hiero-ledger/sdk"],
   turbopack: {
     rules: {
       "*.css": {

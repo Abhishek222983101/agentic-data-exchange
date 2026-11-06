@@ -21,7 +21,7 @@ const LOOP = [
 export default function Home() {
   return (
     <div className="mx-auto max-w-[1120px] px-5">
-      <section className="grid items-end gap-10 pt-12 pb-14 md:grid-cols-[1.1fr_1fr] md:pt-20">
+      <section className="grid grid-cols-1 items-end gap-10 pt-12 pb-14 md:grid-cols-[1.1fr_1fr] md:pt-20">
         <div>
           <h1 className="max-w-[14ch] text-[44px] leading-[1.0] font-semibold tracking-[-0.04em] text-balance md:text-[64px]">
             Robots learn from your hands.
@@ -68,7 +68,7 @@ export default function Home() {
         </ol>
       </section>
 
-      <section className="grid gap-8 border-t py-12 md:grid-cols-3">
+      <section className="grid grid-cols-1 gap-8 border-t py-12 md:grid-cols-3">
         <Principle title="One person, one slot">
           World ID proves you're a unique human without telling us who you are. A dataset of 100 clips really
           has 100 people in it.

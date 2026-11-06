@@ -48,7 +48,7 @@ async function Explorer({ searchParams }: { searchParams: PageProps<"/explorer">
   const active = EXPLORER_QUERIES.find((x) => x.id === q) ?? EXPLORER_QUERIES[0]
   if (!active) return null
   return (
-    <div className="grid gap-6 lg:grid-cols-[240px_1fr]">
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-[240px_1fr]">
       <nav aria-label="Queries" className="-mx-5 overflow-x-auto px-5 [scrollbar-width:none] lg:mx-0 lg:px-0">
         <ul className="flex gap-2 lg:flex-col">
           {EXPLORER_QUERIES.map((x) => (

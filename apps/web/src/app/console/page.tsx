@@ -28,7 +28,7 @@ export default function ConsolePage() {
         <DemoBadge />
       </PageHeader>
 
-      <div className="grid gap-5 pb-10 lg:grid-cols-[340px_1fr]">
+      <div className="grid grid-cols-1 gap-5 pb-10 lg:grid-cols-[340px_1fr]">
         <div className="space-y-5">
           <section className="rounded-[20px] border bg-card p-5" aria-labelledby="policy">
             <h2 id="policy" className="text-[15px] font-semibold">

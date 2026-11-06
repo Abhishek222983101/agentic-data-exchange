@@ -5,6 +5,7 @@ import "server-only"
 import { liveVerifiers, networkCounts, openTasks, type TaskDTO, taskByKey } from "@adx/shared/arkiv"
 import { cacheLife } from "next/cache"
 import type { Hex } from "viem"
+import { liveClaimCount } from "./server/claims"
 
 export type Result<T> = { ok: true; data: T; at: number } | { ok: false; error: string; at: number }
 
@@ -20,13 +21,26 @@ async function attempt<T>(fn: () => Promise<T>): Promise<Result<T>> {
 export async function getOpenTasks(): Promise<Result<TaskDTO[]>> {
   "use cache"
   cacheLife({ stale: 5, revalidate: 5, expire: 60 })
-  return attempt(() => openTasks())
+  return attempt(async () => withFilled(await openTasks()))
+}
+
+/** Slots taken = live reservations in Neon (authoritative, instant); never below the on-chain value. */
+async function withFilled(tasks: TaskDTO[]): Promise<TaskDTO[]> {
+  return Promise.all(
+    tasks.map(async (t) => {
+      const n = await liveClaimCount(t.key).catch(() => 0)
+      return { ...t, filled: Math.max(t.filled, n) }
+    }),
+  )
 }
 
 export async function getTask(key: Hex): Promise<Result<TaskDTO | null>> {
   "use cache"
   cacheLife({ stale: 5, revalidate: 5, expire: 60 })
-  return attempt(() => taskByKey(key))
+  return attempt(async () => {
+    const t = await taskByKey(key)
+    return t ? ((await withFilled([t]))[0] ?? null) : null
+  })
 }
 
 export async function getCounts() {

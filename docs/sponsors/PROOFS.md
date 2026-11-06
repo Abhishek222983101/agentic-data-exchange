@@ -17,6 +17,7 @@ Screenshots are captured clean (no keys or secrets visible) into `docs/proofs/`,
 |---|---|---|---|
 | HED-01 | 06 Nov 08:22 | 4 role accounts created + testnet USDC `0.0.429274` associated | buyer [0.0.11333306](https://hashscan.io/testnet/account/0.0.11333306) · merchant [0.0.11333308](https://hashscan.io/testnet/account/0.0.11333308) · contributors [0.0.11333310](https://hashscan.io/testnet/account/0.0.11333310), [0.0.11333312](https://hashscan.io/testnet/account/0.0.11333312) · `scripts/hedera-setup.ts` |
 | HED-02 | 06 Nov 08:25 | **First x402 payment settled.** The agent paid 0.01 USDC with no human approving (x402.org facilitator) | [0.0.9185802@1793933035.147018991](https://hashscan.io/testnet/transaction/0.0.9185802@1793933035.147018991) · `scripts/x402-smoke.ts` |
+| HED-03 | 06 Nov 16:55 | **Contributor account from a phone wallet key**: ECDSA alias + `maxAutomaticTokenAssociations(-1)`, then 0.01 USDC received with **no association step** (spike for per-contributor payouts) | account [0.0.11337694](https://hashscan.io/testnet/account/0.0.11337694) · create tx `0.0.11332739@1793960532.800430505` · [USDC transfer](https://hashscan.io/testnet/transaction/0.0.11332739@1793960537.356211845) · `scripts/hedera-alias-spike.ts` |
 
 ## Swarm (Sepolia testnet, our own Bee node)
 | ID | When (IST) | What | Proof |

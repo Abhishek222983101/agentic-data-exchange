@@ -3,6 +3,7 @@ import Link from "next/link"
 import { DemoBadge } from "@/components/shell/demo-badge"
 import { Page, PageHeader } from "@/components/shell/page-header"
 import { Button } from "@/components/ui/button"
+import { WalletCard } from "@/components/wallet/wallet-card"
 import { DEMO_ME } from "@/lib/demo"
 
 export const metadata: Metadata = { title: "Me" }
@@ -14,22 +15,17 @@ export default function MePage() {
         title="Your earnings and licences"
         lead="Everything you've been paid for, and the licences you own."
       >
-        <DemoBadge />
+        <DemoBadge what="Earnings: sample data" />
       </PageHeader>
 
-      <div className="grid gap-5 pb-10 lg:grid-cols-[360px_1fr]">
+      <div className="grid grid-cols-1 gap-5 pb-10 lg:grid-cols-[360px_1fr]">
         <section className="rounded-[20px] bg-foreground p-5 text-background">
           <div className="text-[13px] opacity-70">Paid to you</div>
           <div className="mt-1 font-mono text-[40px] leading-none font-medium tracking-tight tabular">
             {DEMO_ME.earnedUsdc}
             <span className="ml-2 font-sans text-[15px] font-normal opacity-70">USDC</span>
           </div>
-          <div className="mt-6 rounded-xl bg-background/10 p-3 text-[13px]">
-            <div className="opacity-70">Your wallet</div>
-            <div className="mt-0.5">
-              Created on your phone the first time you claim. No email or password.
-            </div>
-          </div>
+          <WalletCard />
         </section>
 
         <section aria-labelledby="licences">

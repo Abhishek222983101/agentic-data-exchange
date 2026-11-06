@@ -14,8 +14,8 @@
 | P0 Foundation | Monorepo, env checks, private database, design system + app shell | ✅ done |
 | P1 Arkiv core | Public data layer: 8 record types, safety guard, write queue, seed task, live task board + explorer | ✅ done |
 | P-UI | Every screen in final design, clickable on a phone | ✅ done |
-| P2 Identity | Embedded wallet (passkey), World ID claim, one-human-per-slot | ⏳ next |
-| P3 Capture & upload | In-browser camera recorder, worker upload server on Railway | ⬜ |
+| P2 Identity | Embedded wallet (passkey), World ID claim, one-human-per-slot | ✅ done (real-phone World ID test pending) |
+| P3 Capture & upload | In-browser camera recorder, worker upload server on Railway | ⏳ next |
 
 **Shipping rule:** nothing reaches `main` unless `pnpm verify` passes (typecheck + lint + unit tests + production build). Each phase ends with one push to `main`, which Vercel deploys.
 
@@ -153,6 +153,42 @@ Every task, verdict, receipt and licence is a public record on **Arkiv**, so any
 Every sample region carries a dashed **"Sample data"** badge, so nothing pretends to be real.
 Shared pieces: `PipelineSteps` (live check list, screen-reader announced), `VerdictCard` (each step with the second it happened and an evidence line), `ProofLink` (every on-chain thing is clickable), `SlotRail`, `Countdown`.
 
+### P2 Identity ✅ (Fri 6 Nov, 16:45–17:15 IST)
+
+**Goal:** a contributor claims one slot in under a minute, with no account, and we can prove each slot is a different human.
+
+**Concepts**
+- **Embedded wallet:** the phone creates its own key. It's locked with a **passkey** (Face ID / fingerprint) using the WebAuthn *PRF* extension: the passkey produces a secret that unlocks the wallet, and nothing usable sits on the phone by itself. Browsers without PRF fall back to a key the browser keeps but can't export.
+- **One key, three jobs:** the same key owns the contributor's licences on Arkiv, receives USDC on Hedera, and signs the claim.
+- **World ID claim:** the phone asks World App for a proof that "a unique human is claiming *this task* for *this wallet*". The task and wallet are baked into the proof (the *signal*), so it can't be replayed elsewhere.
+- **Nullifier:** World returns a number that's the same every time the same person claims. We store it privately in Neon with a "unique per task" rule. That's how a second claim by the same person is refused, without us ever knowing who they are.
+- **No overbooking:** slots are reserved inside a database transaction that locks the task, so two people tapping at the same moment can't both get the last slot.
+
+**What was built**
+| Piece | File(s) | Plain words |
+|---|---|---|
+| Wallet vault | `apps/web/src/lib/wallet/vault.ts`, `use-wallet.ts` | Create, seal (passkey PRF or device key), unlock, sign |
+| World ID server | `apps/web/src/lib/server/world.ts` | Signs requests for our one action; checks action, environment and signal *before* asking World; then verifies with World |
+| Claim service | `apps/web/src/lib/server/claims.ts` | Wallet signature → World proof → locked slot reservation → public claim on Arkiv → challenge + upload token |
+| API routes | `app/api/world/rp-signature`, `app/api/claims`, `app/api/contributor` | Rate-limited, one error format, inputs validated |
+| Claim flow UI | `components/tasks/claim-flow.tsx`, `challenge-card.tsx` | One button that says what's happening ("Opening your wallet…", "Waiting for World ID…", "Saving your slot on Arkiv…"), then the big challenge card |
+| Hedera payout account | `packages/shared/src/hedera.ts` | After a claim, creates the contributor's Hedera account from their wallet key so USDC can arrive with no extra step |
+| Wallet card | `components/wallet/wallet-card.tsx` on `/me` | Address, how it's protected, links to licences and payouts |
+
+**Proof it works**
+- `pnpm test:claims` (live Neon + Arkiv, World stubbed): 11/11. First claim ✓, same person again → resume / refused ✓, bad signature ✓, task full ✓, simultaneous claims ✓, forged proofs (wrong action / environment / task) ✓, private rows only in Neon ✓.
+- Browser: passkey wallet created with a virtual PRF authenticator and kept after reload; claim opens World's sheet; closing it says "No slot was taken".
+- Hedera spike: account `0.0.11337694` created from a phone-style key in 2.4 s and received USDC with no association (PROOFS HED-03).
+
+**Security pass (P2)**
+- The official IDKit example lets the client choose which server verifies the proof; ours is hard-coded.
+- World checks the proof against whatever signal hash the client sends, so we recompute and compare it ourselves.
+- Rate limits per IP and per wallet on claims; RP signing only for our action.
+- The nullifier, wallet and upload tokens (hashed) stay in Neon; Arkiv gets a random pseudonym like `c_3f9a1b2c4d`.
+- If the Arkiv write fails, the reserved slot is released, so nobody is locked out.
+
+**Manual step for the team:** claim the towel task once from a real phone with World App (or simulator.worldcoin.org in staging), then again with the same World ID to see "You already hold a slot".
+
 ---
 
 ## How to check things yourself
@@ -161,6 +197,7 @@ pnpm run doctor     # every outside service ✓/✗
 pnpm test           # unit tests (guard, tokens, crypto, challenge, rubric)
 pnpm seed:arkiv     # publish the verifier listing + demo task (idempotent)
 ARKIV_NS=adx-test pnpm arkiv:roundtrip   # live test of all 8 record types
+pnpm test:claims    # live claim rules: one human per slot, no overbooking, forged proofs refused
 pnpm verify         # the full gate that runs before every push to main
 pnpm dev            # run the website locally on http://localhost:3000
 ```

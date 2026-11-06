@@ -22,7 +22,9 @@
     "arkiv:wallets": "tsx --env-file=.env scripts/arkiv-wallets.ts",
     "seed:arkiv": "tsx --env-file=.env scripts/seed-arkiv.ts",
     "verify": "pnpm typecheck && pnpm lint && pnpm test && pnpm build",
-    "arkiv:roundtrip": "tsx --env-file=.env scripts/arkiv-roundtrip.ts"
+    "arkiv:roundtrip": "tsx --env-file=.env scripts/arkiv-roundtrip.ts",
+    "hedera:alias-spike": "tsx --env-file=.env scripts/hedera-alias-spike.ts",
+    "test:claims": "cd apps/web && ARKIV_NS=adx-test tsx --conditions=react-server --env-file=../../.env test/claims.int.mts"
   },
   "dependencies": {
     "@adx/db": "workspace:^",

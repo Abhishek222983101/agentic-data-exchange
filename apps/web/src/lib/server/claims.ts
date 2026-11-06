@@ -1,0 +1,164 @@
+// Claim a slot (system architecture §9.2 /api/claims, flow F3):
+//   wallet signature → World ID proof (signal-bound) → Neon reservation under a per-task lock
+//   (UNIQUE(task, nullifier) = one human per task; count < slots = no overbooking)
+//   → public adx.claim on Arkiv (fresh pseudonym, challenge) → upload token.
+// The nullifier and wallet stay in Neon; Arkiv only gets the pseudonym, slot and challenge.
+import "server-only"
+import { randomBytes } from "node:crypto"
+import { claimsPrivate, contributors, db, eq, sql, uploadTokens } from "@adx/db"
+import { S, safeCreate, taskByKey } from "@adx/shared/arkiv"
+import { decodeChallenge, encodeChallenge, newChallenge } from "@adx/shared/challenge"
+import { type ClaimResponse, claimMessage, claimSignal } from "@adx/shared/claim"
+import { issueUploadToken } from "@adx/shared/upload-token"
+import { ExpirationTime } from "@arkiv-network/sdk"
+import { key as keyV, str, u64 } from "@arkiv-network/sdk/schema"
+import { type Hex, hashMessage, isAddressEqual, recoverMessageAddress, recoverPublicKey } from "viem"
+import { fail } from "./api"
+import { type IdkitResult, verifyClaimProof } from "./world"
+
+const CLAIM_TTL_MS = 2 * 60 * 60 * 1000
+/** A slot is held by a submitted claim, or an unused claim younger than its 2 h Arkiv expiry. */
+const LIVE_SQL =
+  "(status = 'submitted' or (status in ('reserving','active') and created_at > now() - interval '2 hours'))"
+
+function uploadSecret(): string {
+  const s = process.env.UPLOAD_TOKEN_SECRET
+  if (!s || s.length < 32) fail(503, "unconfigured", "Uploads aren't configured on this deployment yet")
+  return s
+}
+
+function uploadUrl(): string | null {
+  const w = process.env.WORKER_PUBLIC_URL
+  return w ? `${w.replace(/\/$/, "")}/upload` : null
+}
+
+async function newUpload(claimKey: string, taskKey: string) {
+  const t = issueUploadToken({ claim: claimKey, task: taskKey }, uploadSecret())
+  await db().insert(uploadTokens).values({ tokenHash: t.tokenHash, claimKey, expiresAt: t.expiresAt })
+  return { url: uploadUrl(), token: t.token, expiresAt: t.expiresAt.toISOString() }
+}
+
+export type ClaimInput = { taskKey: Hex; wallet: Hex; signature: Hex; idkit: IdkitResult }
+
+export type ClaimDeps = { verify: (result: IdkitResult, expectedSignal: string) => Promise<string> }
+
+export async function claimSlot(
+  input: ClaimInput,
+  deps: ClaimDeps = { verify: verifyClaimProof },
+): Promise<{ res: ClaimResponse; publicKey: Hex }> {
+  const { taskKey, wallet, signature, idkit } = input
+
+  // 1. The caller controls the wallet (signature over task + wallet + the RP-signed, single-use nonce).
+  const message = claimMessage(taskKey, wallet, idkit.nonce)
+  const signer = await recoverMessageAddress({ message, signature }).catch(() => null)
+  if (!signer || !isAddressEqual(signer, wallet)) fail(401, "bad_signature", "Wallet signature doesn't match")
+  const publicKey = await recoverPublicKey({ hash: hashMessage(message), signature })
+
+  // 2. The task is ours, open, and not past its deadline.
+  const task = await taskByKey(taskKey).catch(() =>
+    fail(503, "arkiv_unavailable", "Arkiv is slow right now. Try again."),
+  )
+  if (!task) fail(404, "no_task", "This task doesn't exist")
+  if (task.status !== "open" || task.deadline <= Math.floor(Date.now() / 1000)) {
+    fail(410, "task_closed", "This task has closed")
+  }
+
+  // 3. A real, unique human, and the proof is bound to this task + wallet.
+  const nullifier = await deps.verify(idkit, claimSignal(taskKey, wallet))
+
+  // 4. Reserve a slot atomically. Same human again → resume their claim if it's live, else 409.
+  const d = db()
+  const reservation = await d.transaction(async (tx) => {
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${taskKey}))`)
+    const mine = await tx
+      .select()
+      .from(claimsPrivate)
+      .where(sql`${claimsPrivate.taskKey} = ${taskKey} and ${claimsPrivate.nullifier} = ${nullifier}`)
+      .limit(1)
+    const prior = mine[0]
+    const lapsed =
+      prior && prior.status !== "submitted" && prior.createdAt.getTime() < Date.now() - CLAIM_TTL_MS
+    if (prior && !lapsed) return { kind: "existing" as const, row: prior }
+    if (prior && lapsed) await tx.delete(claimsPrivate).where(eq(claimsPrivate.id, prior.id))
+    const taken = await tx.execute(
+      sql`select count(*)::int as n from claims_private where task_key = ${taskKey} and ${sql.raw(LIVE_SQL)}`,
+    )
+    const n = Number((taken.rows[0] as { n: number }).n)
+    if (n >= task.slots) return { kind: "full" as const }
+    const [row] = await tx
+      .insert(claimsPrivate)
+      .values({ taskKey, nullifier, wallet: wallet.toLowerCase(), status: "reserving" })
+      .returning()
+    return { kind: "new" as const, row: row as NonNullable<typeof row>, slot: n + 1 }
+  })
+
+  if (reservation.kind === "full") fail(409, "task_full", "All slots on this task are taken")
+  if (reservation.kind === "existing") {
+    const row = reservation.row
+    const challenge = row.challenge ? decodeChallenge(row.challenge) : null
+    if (row.status === "active" && row.claimKey && challenge && row.wallet === wallet.toLowerCase()) {
+      return {
+        publicKey,
+        res: {
+          claimKey: row.claimKey,
+          taskKey,
+          challenge,
+          slot: 0,
+          upload: await newUpload(row.claimKey, taskKey),
+          resumed: true,
+        },
+      }
+    }
+    fail(409, "already_claimed", "You already hold a slot on this task")
+  }
+
+  // 5. Publish the public claim. If Arkiv fails, release the slot so nobody is locked out.
+  const challenge = newChallenge()
+  const claimant = `c_${randomBytes(5).toString("hex")}`
+  let claimKey: Hex
+  try {
+    const w = await safeCreate(
+      "web",
+      S.Claim,
+      {
+        task: keyV(taskKey),
+        status: str("active"),
+        slot: u64(reservation.slot),
+        claimant: str(claimant),
+        challenge: str(encodeChallenge(challenge)),
+      },
+      ExpirationTime.fromHours(2),
+    )
+    claimKey = w.entityKey
+  } catch (e) {
+    await d.delete(claimsPrivate).where(eq(claimsPrivate.id, reservation.row.id))
+    console.error("[claims] arkiv write failed", (e as Error).message)
+    fail(503, "arkiv_unavailable", "Couldn't record your claim on Arkiv. No slot was taken. Try again.")
+  }
+
+  await d
+    .update(claimsPrivate)
+    .set({ claimKey, status: "active", challenge: encodeChallenge(challenge) })
+    .where(eq(claimsPrivate.id, reservation.row.id))
+  await d.insert(contributors).values({ wallet: wallet.toLowerCase() }).onConflictDoNothing()
+
+  return {
+    publicKey,
+    res: {
+      claimKey,
+      taskKey,
+      challenge,
+      slot: reservation.slot,
+      upload: await newUpload(claimKey, taskKey),
+      resumed: false,
+    },
+  }
+}
+
+/** Count of live reservations per task (authoritative for slots; Arkiv mirrors it). */
+export async function liveClaimCount(taskKey: string): Promise<number> {
+  const r = await db().execute(
+    sql`select count(*)::int as n from claims_private where task_key = ${taskKey} and ${sql.raw(LIVE_SQL)}`,
+  )
+  return Number((r.rows[0] as { n: number }).n)
+}

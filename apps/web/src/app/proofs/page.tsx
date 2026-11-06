@@ -103,7 +103,7 @@ export default function ProofsPage() {
         {PROOFS.map((p) => (
           <li
             key={p.id}
-            className="grid gap-2 border-t py-4 md:grid-cols-[120px_1fr_auto] md:items-center md:gap-6"
+            className="grid grid-cols-1 gap-2 border-t py-4 md:grid-cols-[120px_1fr_auto] md:items-center md:gap-6"
           >
             <div className="text-[13px] text-muted-foreground">{p.sponsor}</div>
             <div className="text-[15px] text-pretty">{p.what}</div>
