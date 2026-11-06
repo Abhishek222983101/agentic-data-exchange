@@ -75,6 +75,21 @@ export async function processJob(db: DB, env: PipelineEnv, job: Job): Promise<st
       throw new Final("rejected", `The clip is ${Math.round(durationS)} seconds; it needs to be 15 to 30.`)
     }
 
+    // A verdict from an earlier attempt (e.g. storage timed out afterwards) is reused, never recomputed.
+    const [priorEv] = await db
+      .select({ data: events.data })
+      .from(events)
+      .where(
+        sql`${events.scope} = ${scope} and ${events.step} = 'verdict' and ${events.ok} is not null and (${events.data} ->> 'summary') is not null`,
+      )
+      .limit(1)
+    const prior = priorEv?.data
+      ? {
+          summary: (priorEv.data as { summary: VerdictSummary }).summary,
+          model: (priorEv.data as { model?: string }).model ?? "gemini-3-flash-preview",
+        }
+      : null
+
     // 2+3 in parallel with 4: fingerprint + cross-buyer dedup, and the AI watching the clip.
     const dedupWork = (async () => {
       const hashes = await timed("fingerprint", () => fingerprint(job.path, p.durationMs))
@@ -91,29 +106,44 @@ export async function processJob(db: DB, env: PipelineEnv, job: Job): Promise<st
       )
       return { hashes, duplicateOf: near?.key }
     })()
-    const aiWork = watchClip({
-      path: job.path,
-      mime: job.mime ?? "video/mp4",
-      rubric: task.rubric,
-      challenge,
-      durationS,
-      apiKey: env.geminiKey,
-    })
-    const [fp, ai] = await Promise.all([dedupWork, aiWork])
+    const rubric = task.rubric
+    const [fp, ai] = await Promise.all([
+      dedupWork,
+      prior
+        ? Promise.resolve(null)
+        : watchClip({
+            path: job.path,
+            mime: job.mime ?? "video/mp4",
+            rubric,
+            challenge,
+            durationS,
+            apiKey: env.geminiKey,
+          }),
+    ])
     if (fp.duplicateOf)
       throw new Final("duplicate", "This clip matches one already on Arkiv", { duplicateOf: fp.duplicateOf })
 
-    // 5. Code decides.
-    const summary: VerdictSummary = decide({ report: ai.report, rubric: task.rubric, challenge, durationS })
-    await event("verdict", summary.verdict !== "reject", ai.ms, {
-      verdict: summary.verdict,
-      score: summary.score,
-      summary,
-    })
+    // 5. Code decides, once. A retry reuses the earlier verdict: no second AI call, no second reputation change.
+    let summary: VerdictSummary
+    let model: string
+    if (prior) {
+      summary = prior.summary
+      model = prior.model
+    } else {
+      if (!ai) throw new Error("no AI report")
+      summary = decide({ report: ai.report, rubric, challenge, durationS })
+      model = ai.model
+      await event("verdict", summary.verdict !== "reject", ai.ms, {
+        verdict: summary.verdict,
+        score: summary.score,
+        summary,
+        model,
+      })
+      await updateReputation(db, job.claimKey, summary.verdict)
+    }
     const status =
       summary.verdict === "accept" ? "accepted" : summary.verdict === "reject" ? "rejected" : "review"
     await db.update(jobs).set({ status, updatedAt: new Date() }).where(eq(jobs.id, job.id))
-    await updateReputation(db, job.claimKey, summary.verdict)
 
     // 6+7. Encrypt and store on our Swarm node (ciphertext only).
     const key = newClipKey()
@@ -121,7 +151,18 @@ export async function processJob(db: DB, env: PipelineEnv, job: Job): Promise<st
     const cipherSha256 = sha256Hex(blob)
     const swarmRef = await timed(
       "store",
-      () => swarmUpload(blob, { beeUrl: env.beeUrl, batchId: env.batchId, timeoutMs: 120_000 }),
+      async () => {
+        let last: unknown
+        for (let i = 0; i < 3; i++) {
+          try {
+            return await swarmUpload(blob, { beeUrl: env.beeUrl, batchId: env.batchId, timeoutMs: 45_000 })
+          } catch (e) {
+            last = e
+            await new Promise((r) => setTimeout(r, 2000 * (i + 1)))
+          }
+        }
+        throw last
+      },
       (ref) => ({ swarmRef: ref }),
     )
 
@@ -157,7 +198,7 @@ export async function processJob(db: DB, env: PipelineEnv, job: Job): Promise<st
         task: keyV(job.taskKey as Hex),
         verdict: str(summary.verdict),
         score: u64(summary.score),
-        model: str(ai.model),
+        model: str(model),
         rubricHash: str(task.rubricHash),
         evidence: bytes(new TextEncoder().encode(evidence)),
         evidenceHash: str(sha256Hex(evidence)),
