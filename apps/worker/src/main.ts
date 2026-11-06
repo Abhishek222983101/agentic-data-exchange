@@ -88,6 +88,28 @@ app.get("/swarm/:ref", async (c) => {
   })
 })
 
+/** Fetch a reference from Swarm testnet through our Bee node (clips are AES-encrypted: this is ciphertext). */
+app.get("/swarm/:ref/bytes", async (c) => {
+  const ref = c.req.param("ref")
+  if (!/^[0-9a-f]{64}$/.test(ref))
+    return c.json({ error: { code: "invalid", message: "Not a Swarm reference" } }, 400)
+  const r = await fetch(`${env.BEE_URL}/bytes/${ref}`, { signal: AbortSignal.timeout(60_000) }).catch(
+    () => null,
+  )
+  if (!r?.ok || !r.body) return c.json({ error: { code: "not_found", message: "Not found on Swarm" } }, 404)
+  const len = Number(r.headers.get("content-length") ?? 0)
+  if (len > 70 * 1024 * 1024) return c.json({ error: { code: "too_large", message: "Too large" } }, 413)
+  return new Response(r.body, {
+    headers: {
+      "content-type": "application/octet-stream",
+      "content-disposition": `attachment; filename="${ref.slice(0, 12)}.encrypted"`,
+      "x-swarm-network": "testnet (Sepolia, network 10)",
+      "access-control-allow-origin": "*",
+      "cache-control": "public, max-age=3600",
+    },
+  })
+})
+
 app.post("/swarm/:ref/push", async (c) => {
   const ref = c.req.param("ref")
   if (!/^[0-9a-f]{64}$/.test(ref))

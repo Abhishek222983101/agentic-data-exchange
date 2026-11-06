@@ -137,7 +137,11 @@ export function LiveStatus({ id, initial }: { id: string; initial: View }) {
             <ProofLink kind="arkiv" href={links.arkivEntity(pub.submissionKey)} label="Submission on Arkiv" />
           ) : null}
           {swarmRef ? (
-            <ProofLink kind="swarm" href={links.swarm(swarmRef)} label="Encrypted clip on Swarm" />
+            <ProofLink
+              kind="swarm"
+              href={links.swarmTestnet(swarmRef)}
+              label="Encrypted clip on Swarm (testnet)"
+            />
           ) : null}
         </div>
       ) : null}
