@@ -20,36 +20,14 @@ Everything on this page is public. No keys or secrets are shared here.
 | Swarm upload path | Client-side AES-256-GCM encryption, then `POST /bytes` of the ciphertext. Tested at 1, 10 and 30 MB through `api.gateway.ethswarm.org`; every download decrypted and matched |
 | What goes on Arkiv | Only the plain 64-hex reference of the **ciphertext**. The decryption key stays in our private database, never on Arkiv |
 
-### The problem
-The public gateway stamps uploads with its own batch, but `/arkiv/swarm.md` needs **our batch ID and who bought it**.
+### Our Swarm setup (self-hosted, no help needed)
+We run our own Bee 2.8.3 light node (Sepolia testnet) on Railway, funded by our own wallet: Sepolia ETH swapped for sBZZ on Uniswap, chequebook deployed, our own postage batch. Every step is in `sponsor-logs/swarm-session.md`.
 
-### Any ONE of these unblocks us
-
-**Option A (easiest for us): a batch on a node or gateway you run.** Please send:
-- [ ] the postage batch ID
-- [ ] the Bee node or gateway URL to upload through
-- [ ] an auth token, if the node needs one
-- [ ] who bought the batch (wallet or name), so we can credit it in `swarm.md`
-
-**Option B: testnet tokens so we run our own Bee node.** Send to our Swarm funding wallet:
-
-```
-0xCEfca762D3Cdc231B20220dA681021b562afF694
-```
-
-- [ ] sBZZ (Sepolia), enough for one batch at depth 20 for 7+ days
-- [ ] a little Sepolia ETH for gas
-- [ ] (or tell us if you prefer Gnosis mainnet xBZZ + xDAI instead)
-
-**Option C: a gateway that accepts our own batch ID.**
-- [ ] gateway URL
-
-### What we need from the batch
 | | |
 |---|---|
-| Clip size | 5–30 MB each (encrypted ciphertext) |
-| Expected volume | ~50 uploads during the hackathon, plus judge testing |
-| Depth / life | depth 20, at least 7 days, so links still open for judges after Saturday |
+| Swarm funding wallet | `0xCEfca762D3Cdc231B20220dA681021b562afF694` |
+| Bee node wallet | `0xD6Cb98e02424B216Dc51034AD132B2195F79a538` |
+| Chequebook | `0x960973Dc7cA48fB5F5eE5D32a17C698AE52b320b` |
 
 ### Questions
 1. Is there an upload size limit or rate limit on the node or gateway?
