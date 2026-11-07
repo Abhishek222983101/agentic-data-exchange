@@ -1,4 +1,13 @@
-import { BadgeCheck, Compass, LayoutGrid, type LucideIcon, ScanSearch, Video, Wallet } from "lucide-react"
+import {
+  Activity,
+  BadgeCheck,
+  Compass,
+  LayoutGrid,
+  type LucideIcon,
+  ScanSearch,
+  Video,
+  Wallet,
+} from "lucide-react"
 
 export type NavItem = { href: string; label: string; icon: LucideIcon; match: (p: string) => boolean }
 
@@ -22,6 +31,7 @@ export const PRIMARY_NAV: NavItem[] = [
 
 /** Desktop adds the judge-facing pages. */
 export const DESKTOP_EXTRA: NavItem[] = [
+  { href: "/live", label: "Live", icon: Activity, match: (p) => p.startsWith("/live") },
   { href: "/explorer", label: "Explorer", icon: ScanSearch, match: (p) => p.startsWith("/explorer") },
   { href: "/proofs", label: "Proofs", icon: BadgeCheck, match: (p) => p.startsWith("/proofs") },
 ]

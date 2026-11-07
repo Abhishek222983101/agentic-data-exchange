@@ -92,7 +92,7 @@ export function SiteFooter() {
       palette={
         dark
           ? { background: "#0a0a0b", ink: "#e9e9ec", warm: "#FE7446" }
-          : { background: "#f6f0e3", ink: "#111214", warm: "#FE7446" }
+          : { background: "#f6f0e3", ink: "#FE7446", warm: "#c2410c" }
       }
       label="Team Paradigm"
       meta="Built at ETHGlobal Mumbai 2026. Robot teams' agents buy verified clips from real people."
@@ -108,6 +108,7 @@ export function SiteFooter() {
         {
           title: "Agents",
           links: [
+            { label: "Live system", href: "/live" },
             { label: "Buyer console", href: "/console" },
             { label: "Records on Arkiv", href: "/explorer" },
             { label: "Proofs", href: "/proofs" },
