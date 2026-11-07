@@ -6,10 +6,10 @@ function format(secondsLeft: number): string {
   if (secondsLeft <= 0) return "Closed"
   const h = Math.floor(secondsLeft / 3600)
   const m = Math.floor((secondsLeft % 3600) / 60)
-  if (h >= 48) return `Closes in ${Math.floor(h / 24)} days`
-  if (h >= 1) return `Closes in ${h} h ${m} min`
-  if (m >= 1) return `Closes in ${m} min`
-  return "Closes in under a minute"
+  if (h >= 48) return `${Math.floor(h / 24)} days left`
+  if (h >= 1) return `${h} h ${m} min left`
+  if (m >= 1) return `${m} min left`
+  return "Under a minute left"
 }
 
 /** Deadline countdown from the task's on-chain `deadline` (unix seconds). Ticks every 30 s. */

@@ -4,7 +4,7 @@ import type { Metadata } from "next"
 import { Suspense } from "react"
 import { ProofLink } from "@/components/proof/proof-link"
 import { Page, PageHeader } from "@/components/shell/page-header"
-import { TaskCard } from "@/components/tasks/task-card"
+import { TaskSheet } from "@/components/tasks/task-sheet"
 import { Skeleton } from "@/components/ui/skeleton"
 import { getOpenTasks } from "@/lib/data"
 
@@ -47,7 +47,7 @@ async function Board() {
         <ul className="grid gap-3 md:grid-cols-2">
           {tasks.map((t) => (
             <li key={t.key}>
-              <TaskCard task={t} />
+              <TaskSheet task={t} />
             </li>
           ))}
         </ul>
