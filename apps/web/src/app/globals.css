@@ -35,10 +35,13 @@
   --color-warning: var(--warning);
   --color-danger: var(--danger);
   --color-sunken: var(--sunken);
+  --color-signal-text: var(--signal-text);
+  --color-success-soft: var(--success-soft);
+  --color-success-text: var(--success-text);
 
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-inter);
   --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-geist-sans);
+  --font-heading: var(--font-inter);
 
   --radius-sm: 6px;
   --radius-md: 10px;
@@ -50,33 +53,37 @@
 }
 
 :root {
-  --background: #fafafa;
-  --foreground: #18181b;
+  /* Paper design (07 Nov): warm cream page, white cards, ink text, one orange signal. */
+  --background: #f6f0e3;
+  --foreground: #111214;
   --card: #ffffff;
-  --card-foreground: #18181b;
+  --card-foreground: #111214;
   --popover: #ffffff;
-  --popover-foreground: #18181b;
-  --primary: #18181b;
-  --primary-foreground: #fafafa;
-  --secondary: #f4f4f5;
-  --secondary-foreground: #18181b;
-  --muted: #f4f4f5;
-  --muted-foreground: #71717a;
-  --accent: #f4f4f5;
-  --accent-foreground: #18181b;
+  --popover-foreground: #111214;
+  --primary: #111214;
+  --primary-foreground: #ffffff;
+  --secondary: #efe7d9;
+  --secondary-foreground: #111214;
+  --muted: #efe7d9;
+  --muted-foreground: #6b7076;
+  --accent: #efe7d9;
+  --accent-foreground: #111214;
   --destructive: #dc2626;
-  --border: #e4e4e7;
-  --input: #e4e4e7;
+  --border: #e3dccd;
+  --input: #ddd5c5;
   --ring: #fe7446;
-  --sunken: #f4f4f5;
+  --sunken: #efe7d9;
 
   --signal: #fe7446;
   --signal-ink: #1c0a03;
-  --signal-soft: #fff1eb;
+  --signal-soft: #fff0ea;
+  --signal-text: #c2410c;
   --success: #16a34a;
+  --success-soft: #e9f7ee;
+  --success-text: #15803d;
   --warning: #d97706;
   --danger: #dc2626;
-  --radius: 14px;
+  --radius: 18px;
 }
 
 .dark {
@@ -119,7 +126,8 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-feature-settings: "ss01", "cv11";
+    font-feature-settings: "cv11", "ss01", "ss03";
+    letter-spacing: -0.006em;
   }
   :focus-visible {
     outline: 2px solid var(--signal);

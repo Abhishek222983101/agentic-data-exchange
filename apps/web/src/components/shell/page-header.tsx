@@ -10,11 +10,15 @@ export function PageHeader({
   children?: ReactNode
 }) {
   return (
-    <div className="flex flex-wrap items-end justify-between gap-4 pt-8 pb-6">
+    <div className="flex flex-wrap items-end justify-between gap-4 pt-6 pb-5">
       <div className="min-w-0">
-        <h1 className="text-[28px] leading-tight font-semibold tracking-[-0.03em] md:text-[34px]">{title}</h1>
+        <h1 className="text-[34px] leading-[1.05] font-semibold tracking-[-0.035em] md:text-[40px]">
+          {title}
+        </h1>
         {lead ? (
-          <p className="mt-1.5 max-w-[60ch] text-[15px] text-muted-foreground text-pretty">{lead}</p>
+          <p className="mt-2 max-w-[40ch] text-[15px] leading-relaxed text-muted-foreground text-pretty">
+            {lead}
+          </p>
         ) : null}
       </div>
       {children}

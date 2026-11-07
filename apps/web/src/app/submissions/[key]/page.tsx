@@ -1,10 +1,8 @@
 import type { Metadata } from "next"
-import Link from "next/link"
 import { notFound } from "next/navigation"
 import { Suspense } from "react"
-import { Page, PageHeader } from "@/components/shell/page-header"
+import { Page } from "@/components/shell/page-header"
 import { LiveStatus } from "@/components/submission/live-status"
-import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { isSubmissionId, submissionView } from "@/lib/server/submissions"
 
@@ -13,24 +11,10 @@ export const metadata: Metadata = { title: "Your clip" }
 export default function SubmissionPage({ params }: PageProps<"/submissions/[key]">) {
   return (
     <Page>
-      <PageHeader title="Your clip" lead="Each check ticks off as it finishes." />
-      <div className="grid grid-cols-1 gap-6 pb-10 lg:grid-cols-[minmax(0,460px)_1fr]">
-        <Suspense fallback={<Skeleton className="h-80 w-full rounded-[20px]" />}>
+      <div className="pt-4">
+        <Suspense fallback={<Skeleton className="mx-auto h-80 w-full max-w-[440px] rounded-[18px]" />}>
           <Status params={params} />
         </Suspense>
-        <div className="space-y-4 text-[14px] text-muted-foreground">
-          <p>
-            When your clip is accepted, the robot team's agent pays you automatically. You'll see the payment
-            and your licence on{" "}
-            <Link href="/me" className="font-medium text-foreground underline underline-offset-4">
-              your page
-            </Link>
-            .
-          </p>
-          <Button asChild variant="outline" size="lg">
-            <Link href="/tasks">Find another task</Link>
-          </Button>
-        </div>
       </div>
     </Page>
   )

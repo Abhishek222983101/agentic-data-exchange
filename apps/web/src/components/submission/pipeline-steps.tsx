@@ -11,7 +11,7 @@ export function PipelineSteps({ events }: { events: PipelineEvent[] }) {
   const failed = events.find((e) => !e.ok)
   const firstPending = PIPELINE_STEPS.findIndex((s) => !byStep.has(s.id))
   return (
-    <ol aria-live="polite" className="relative">
+    <ol aria-live="polite" className="divide-y divide-black/[0.06] border-y border-black/[0.06]">
       {PIPELINE_STEPS.map((s, i) => {
         const ev = byStep.get(s.id)
         const state = ev
@@ -24,45 +24,52 @@ export function PipelineSteps({ events }: { events: PipelineEvent[] }) {
               ? "active"
               : "waiting"
         return (
-          <li key={s.id} className="relative flex items-center gap-3.5 py-2.5">
-            {i < PIPELINE_STEPS.length - 1 ? (
-              <span
-                aria-hidden="true"
-                className={cn(
-                  "absolute top-[34px] left-[11px] h-[calc(100%-22px)] w-px",
-                  state === "done" ? "bg-foreground/30" : "bg-border",
-                )}
-              />
-            ) : null}
+          <li
+            key={s.id}
+            className={cn(
+              "flex items-center gap-3 py-3",
+              state === "active" && "-mx-3 rounded-[12px] border-none bg-signal-soft px-3",
+            )}
+          >
             <span
               className={cn(
-                "relative z-10 grid size-[23px] shrink-0 place-items-center rounded-full border",
-                state === "done" && "border-foreground bg-foreground text-background",
-                state === "fail" && "border-danger bg-danger text-white",
-                state === "active" && "border-signal bg-signal-soft",
-                (state === "waiting" || state === "skipped") && "border-border bg-background",
+                "grid size-[22px] shrink-0 place-items-center rounded-full",
+                state === "done" && "bg-success-soft text-success-text",
+                state === "fail" && "bg-danger text-white",
+                state === "active" && "bg-signal",
+                (state === "waiting" || state === "skipped") && "border border-black/15",
               )}
             >
-              {state === "done" ? <Check className="size-3.5" strokeWidth={3} /> : null}
-              {state === "fail" ? <X className="size-3.5" strokeWidth={3} /> : null}
+              {state === "done" ? <Check className="size-3" strokeWidth={3} /> : null}
+              {state === "fail" ? <X className="size-3" strokeWidth={3} /> : null}
               {state === "active" ? (
-                <span className="size-2 animate-pulse rounded-full bg-signal motion-reduce:animate-none" />
+                <span className="size-2 animate-pulse rounded-full bg-card motion-reduce:animate-none" />
               ) : null}
             </span>
             <span
               className={cn(
-                "flex-1 text-[15px]",
-                state === "waiting" || state === "skipped" ? "text-muted-foreground" : "text-foreground",
-                state === "active" && "font-medium",
+                "flex-1 text-[15px] font-medium",
+                (state === "waiting" || state === "skipped") && "font-normal text-muted-foreground",
               )}
             >
               {s.label}
               {state === "fail" && ev?.data?.reason ? (
-                <span className="block text-[13px] text-danger">{ev.data.reason}</span>
+                <span className="block text-[13px] font-normal text-danger">{ev.data.reason}</span>
               ) : null}
             </span>
-            <span className="font-mono text-[12px] text-muted-foreground tabular">
-              {ev?.ms != null ? (ev.ms >= 1000 ? `${(ev.ms / 1000).toFixed(1)} s` : `${ev.ms} ms`) : ""}
+            <span
+              className={cn(
+                "text-[12.5px] tabular",
+                state === "active" ? "font-medium text-signal-text" : "text-muted-foreground",
+              )}
+            >
+              {state === "active"
+                ? "live"
+                : ev?.ms != null
+                  ? ev.ms >= 1000
+                    ? `${(ev.ms / 1000).toFixed(1)} s`
+                    : `${ev.ms} ms`
+                  : ""}
             </span>
           </li>
         )

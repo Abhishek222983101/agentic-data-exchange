@@ -8,17 +8,17 @@ export function TaskCard({ task }: { task: TaskDTO }) {
   return (
     <Link
       href={`/tasks/${task.key}`}
-      className="group block rounded-[18px] border bg-card p-5 transition-colors hover:border-foreground/25 focus-visible:border-signal"
+      className="group block rounded-[18px] border border-black/[0.04] bg-card p-5 shadow-[0_1px_2px_rgba(17,18,20,0.04)] transition-transform active:scale-[0.99]"
     >
       <div className="flex items-start justify-between gap-4">
         <h2 className="text-[17px] leading-snug font-semibold tracking-[-0.01em] text-pretty">
           {task.title}
         </h2>
         <div className="shrink-0 text-right">
-          <div className="font-mono text-[22px] leading-none font-medium tracking-tight tabular">
+          <div className="text-[22px] leading-none font-semibold tracking-[-0.02em] tabular">
             {task.reward}
           </div>
-          <div className="mt-1 text-[12px] text-muted-foreground">USDC</div>
+          <div className="mt-1 text-[11px] font-semibold tracking-[0.06em] text-muted-foreground">USDC</div>
         </div>
       </div>
       {task.rubric ? (

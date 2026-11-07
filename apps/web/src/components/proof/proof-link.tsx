@@ -30,7 +30,7 @@ export function ProofLink({
     </>
   )
   const cls = cn(
-    "inline-flex h-7 items-center gap-1.5 rounded-full border px-2.5 text-[12.5px] font-medium text-foreground/80",
+    "inline-flex h-8 items-center gap-1.5 rounded-full border border-black/10 bg-card px-3 text-[12.5px] font-medium text-foreground",
     href && "transition-colors hover:border-foreground/30 hover:text-foreground",
     className,
   )

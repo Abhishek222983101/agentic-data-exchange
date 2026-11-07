@@ -1,7 +1,7 @@
 // Public view of one submission for its status page. Only display-safe fields: no wallet, no nullifier,
 // no file path, no keys. The id is a random UUID the uploader received.
 import "server-only"
-import { asc, claimsPrivate, db, eq, events, jobs, payments, sql } from "@adx/db"
+import { approvals, asc, claimsPrivate, db, eq, events, jobs, payments, sql } from "@adx/db"
 import { claimByKey } from "@adx/shared/arkiv"
 import { decodeChallenge } from "@adx/shared/challenge"
 import type { PipelineEvent } from "@adx/shared/events"
@@ -21,6 +21,7 @@ export type SubmissionView = {
     receiptKey: string | null
     licenceKey: string | null
     payTo: string
+    approvedByHuman: boolean
   } | null
 }
 
@@ -63,6 +64,17 @@ export async function submissionView(id: string): Promise<SubmissionView | null>
         .where(sql`lower(${payments.submissionKey}) = ${job.submissionKey.toLowerCase()}`)
         .limit(1)
     : []
+  // A World Agent Pass approval is recorded in its own table, keyed by the submission.
+  const [approved] =
+    pay && job.submissionKey
+      ? await d
+          .select({ id: approvals.id })
+          .from(approvals)
+          .where(
+            sql`lower(${approvals.submissionKey}) = ${job.submissionKey.toLowerCase()} and ${approvals.status} = 'approved'`,
+          )
+          .limit(1)
+      : []
   return {
     payment: pay
       ? {
@@ -72,6 +84,7 @@ export async function submissionView(id: string): Promise<SubmissionView | null>
           receiptKey: pay.receiptKey,
           licenceKey: pay.licenceKey,
           payTo: pay.payTo,
+          approvedByHuman: Boolean(pay.approvalId || approved),
         }
       : null,
     id: job.id,
