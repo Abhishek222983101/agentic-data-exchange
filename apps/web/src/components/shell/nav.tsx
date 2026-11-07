@@ -8,7 +8,7 @@ import { DESKTOP_EXTRA, PRIMARY_NAV } from "./nav-items"
 
 function DesktopNavInner({ path }: { path: string }) {
   return (
-    <nav aria-label="Main" className="hidden md:flex items-center gap-1">
+    <nav aria-label="Main" className="hidden md:flex items-center gap-7">
       {[...PRIMARY_NAV, ...DESKTOP_EXTRA].map((item) => {
         const active = item.match(path)
         return (
@@ -17,8 +17,8 @@ function DesktopNavInner({ path }: { path: string }) {
             href={item.href}
             aria-current={active ? "page" : undefined}
             className={cn(
-              "rounded-full px-3.5 py-1.5 text-sm transition-colors",
-              active ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground",
+              "text-[15px] transition-colors",
+              active ? "text-foreground" : "text-muted-foreground hover:text-foreground",
             )}
           >
             {item.label}

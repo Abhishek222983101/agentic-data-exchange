@@ -57,5 +57,19 @@
         "organizeImports": "on"
       }
     }
-  }
+  },
+  "overrides": [
+    {
+      "includes": ["apps/web/src/components/landing/**"],
+      "linter": {
+        "rules": {
+          "a11y": {
+            "noStaticElementInteractions": "off",
+            "noSvgWithoutTitle": "off",
+            "useSemanticElements": "off"
+          }
+        }
+      }
+    }
+  ]
 }

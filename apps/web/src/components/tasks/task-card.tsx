@@ -7,7 +7,7 @@ export function TaskCard({ task }: { task: TaskDTO }) {
   return (
     <Link
       href={`/tasks/${task.key}`}
-      className="group block rounded-[18px] border border-black/[0.04] bg-card p-5 shadow-[0_1px_2px_rgba(17,18,20,0.04)] transition-transform active:scale-[0.99]"
+      className="group block rounded-[18px] border border-border bg-card p-5 transition-transform active:scale-[0.99]"
     >
       <TaskCardBody task={task} />
     </Link>

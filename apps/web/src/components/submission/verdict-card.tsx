@@ -25,8 +25,7 @@ export function VerdictCard({ v, bare = false }: { v: VerdictSummary; bare?: boo
   return (
     <section
       className={cn(
-        !bare &&
-          "rounded-[18px] border bg-card p-5 shadow-[0_1px_2px_rgba(17,18,20,0.04)] animate-in fade-in slide-in-from-bottom-2 duration-500",
+        !bare && "rounded-[18px] border bg-card p-5 animate-in fade-in slide-in-from-bottom-2 duration-500",
         !bare && head.ring,
       )}
       aria-labelledby="verdict-title"
@@ -77,7 +76,7 @@ export function VerdictCard({ v, bare = false }: { v: VerdictSummary; bare?: boo
 
       <ol className="mt-5">
         {v.steps.map((s) => (
-          <li key={s.name} className="flex gap-3 border-t border-black/[0.06] py-3">
+          <li key={s.name} className="flex gap-3 border-t border-border py-3">
             <span className="w-11 shrink-0 pt-px font-mono text-[12.5px] text-signal-text tabular">
               {s.t || "—"}
             </span>

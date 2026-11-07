@@ -96,7 +96,7 @@ export function LiveStatus({ id, initial }: { id: string; initial: View }) {
           </p>
         </section>
 
-        <section className="rounded-[18px] bg-card p-5 shadow-[0_1px_2px_rgba(17,18,20,0.04)]">
+        <section className="rounded-[18px] bg-card p-5">
           <h2 className="text-[11px] font-semibold tracking-[0.08em] text-muted-foreground">RECEIPT</h2>
           <dl className="mt-3 space-y-2.5 text-[14px]">
             <Row label="To">
@@ -148,7 +148,7 @@ export function LiveStatus({ id, initial }: { id: string; initial: View }) {
               href={links.arkivEntity(paid.licenceKey)}
               target="_blank"
               rel="noopener noreferrer"
-              className="mt-4 inline-flex h-8 items-center gap-1 rounded-full border border-black/10 bg-card px-3 text-[12.5px] font-medium"
+              className="mt-4 inline-flex h-8 items-center gap-1 rounded-full border border-border bg-card px-3 text-[12.5px] font-medium"
             >
               Licence {shortHex(paid.licenceKey)}
               <ArrowUpRight className="size-3.5 opacity-60" aria-hidden="true" />
@@ -184,7 +184,7 @@ export function LiveStatus({ id, initial }: { id: string; initial: View }) {
         </Button>
 
         {summary ? (
-          <details className="group rounded-[18px] bg-card p-5 shadow-[0_1px_2px_rgba(17,18,20,0.04)]">
+          <details className="group rounded-[18px] bg-card p-5">
             <summary className="cursor-pointer list-none text-[14px] font-medium">
               How your clip was checked
               <span className="ml-1 text-muted-foreground group-open:hidden">· show</span>
@@ -266,7 +266,7 @@ export function LiveStatus({ id, initial }: { id: string; initial: View }) {
       {proofs}
 
       {checked ? (
-        <details className="rounded-[18px] bg-card p-5 shadow-[0_1px_2px_rgba(17,18,20,0.04)]">
+        <details className="rounded-[18px] bg-card p-5">
           <summary className="cursor-pointer list-none text-[14px] font-medium">
             Every check, with timings
           </summary>

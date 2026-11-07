@@ -1,142 +1,223 @@
+import { ArrowRight, Bot, Camera, ShieldCheck, Video, Wallet } from "lucide-react"
 import Link from "next/link"
 import { Suspense } from "react"
-import { TaskCard } from "@/components/tasks/task-card"
-import { Button } from "@/components/ui/button"
+import { HeroBackground, HeroMachine, HowItWorks, SiteFooter } from "@/components/landing/landing-client"
+import { TaskSheet } from "@/components/tasks/task-sheet"
 import { Skeleton } from "@/components/ui/skeleton"
 import { getCounts, getOpenTasks } from "@/lib/data"
 
-const LOOP = [
+const BUILT_ON = [
+  "Arkiv",
+  "Swarm",
+  "Hedera x402",
+  "Hedera Agent Kit",
+  "World ID",
+  "World Agent Pass",
+  "Gemini",
+  "USDC",
+]
+
+const TRY = [
   {
-    who: "Robot team's agent",
-    what: "posts the move its robot keeps getting wrong, with a reward and a few slots",
+    n: "1",
+    icon: Camera,
+    title: "Film a task",
+    body: "Pick a task, prove you're human with World ID, film 30 seconds.",
+    cta: "See open tasks",
+    href: "/tasks",
   },
-  { who: "You", what: "prove you're a unique human with World ID and take one slot" },
-  { who: "You", what: "film 15–30 seconds on your phone, saying a word and showing fingers so it's live" },
-  { who: "AI verifier", what: "watches the clip and points to the second each step happens" },
-  { who: "Swarm", what: "stores the clip encrypted, so nobody sees it before paying" },
-  { who: "Agent", what: "pays you in USDC on Hedera, automatically under its budget" },
-  { who: "You", what: "own the licence on Arkiv, held by your own wallet" },
+  {
+    n: "2",
+    icon: Bot,
+    title: "Watch the agent pay",
+    body: "See its budget, every payment, and approve big ones with World ID.",
+    cta: "Open the console",
+    href: "/console",
+  },
+  {
+    n: "3",
+    icon: ShieldCheck,
+    title: "Check the records",
+    body: "Every task, verdict, payment and licence is public on Arkiv.",
+    cta: "See the records",
+    href: "/explorer",
+  },
 ]
 
 export default function Home() {
   return (
-    <div className="mx-auto max-w-[1120px] px-5">
-      <section className="grid grid-cols-1 items-end gap-10 pt-12 pb-14 md:grid-cols-[1.1fr_1fr] md:pt-20">
-        <div>
-          <h1 className="max-w-[14ch] text-[44px] leading-[1.0] font-semibold tracking-[-0.04em] text-balance md:text-[64px]">
-            Robots learn from your hands.
-          </h1>
-          <p className="mt-5 max-w-[46ch] text-[17px] text-muted-foreground text-pretty">
-            Robot teams post the exact moves their robots fail at. Film one on your phone, get paid in USDC
-            when it's accepted, and keep the licence to your clip.
-          </p>
-          <div className="mt-8 flex flex-wrap items-center gap-3">
-            <Button asChild variant="signal" size="xl">
-              <Link href="/tasks">See open tasks</Link>
-            </Button>
-            <Button asChild variant="ghost" size="xl" className="text-muted-foreground">
-              <Link href="/explorer">Check the records</Link>
-            </Button>
+    <div className="-mb-24 md:-mb-12">
+      <section className="relative isolate overflow-hidden">
+        <HeroBackground />
+        <div className="mx-auto grid max-w-[1240px] items-center gap-6 px-5 pt-12 pb-14 lg:grid-cols-[1fr_1.15fr] lg:pt-20 lg:pb-24">
+          <div>
+            <span className="inline-flex items-center gap-2 rounded-full border bg-card/70 px-3 py-1 text-[13px] text-muted-foreground">
+              <Video className="size-3.5" />
+              <span>
+                Team Paradigm · ETHGlobal Mumbai
+                <span className="hidden sm:inline"> · Robot training data</span>
+              </span>
+            </span>
+            <h1 className="mt-6 text-[44px] leading-[1.04] font-semibold tracking-[-0.03em] sm:text-[60px]">
+              <span className="font-serif font-normal text-muted-foreground italic">
+                Robots can't fold yet.
+              </span>
+              <br />
+              Film it. Get paid.
+            </h1>
+            <p className="mt-5 max-w-[34rem] text-[18px] leading-relaxed text-muted-foreground">
+              AI agents post the moves their robots fail at. Film one on your phone and get paid in USDC.
+            </p>
+            <div className="mt-8 flex flex-wrap items-center gap-3">
+              <Link
+                href="/tasks"
+                className="inline-flex h-12 items-center gap-2 rounded-[10px] bg-primary px-6 text-[15px] font-medium text-primary-foreground transition-colors hover:bg-primary/85"
+              >
+                <Camera className="size-4" />
+                Find a task
+              </Link>
+              <Link
+                href="/console"
+                className="inline-flex h-12 items-center gap-2 rounded-[10px] border border-input px-6 text-[15px] font-medium transition-colors hover:bg-secondary"
+              >
+                <Wallet className="size-4" />
+                Watch the agent pay
+              </Link>
+            </div>
+            <Suspense fallback={<StatsShell />}>
+              <Stats />
+            </Suspense>
+          </div>
+          <div className="relative">
+            <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_50%_55%,color-mix(in_oklab,var(--foreground)_7%,transparent),transparent_65%)]" />
+            <HeroMachine />
           </div>
         </div>
-        <div>
-          <p className="mb-3 text-[13px] text-muted-foreground">Open right now, read from Arkiv</p>
-          <Suspense fallback={<Skeleton className="h-[164px] w-full rounded-[18px]" />}>
-            <LiveTask />
-          </Suspense>
+      </section>
+
+      <section aria-label="Built on" className="border-y bg-card/40 py-8">
+        <div className="mx-auto max-w-[1240px] px-5">
+          <p className="mb-4 text-center text-[13px] tracking-[0.14em] text-muted-foreground">BUILT ON</p>
+          <div className="relative overflow-hidden [mask-image:linear-gradient(to_right,transparent,white_12%,white_88%,transparent)]">
+            <div className="marquee flex w-max gap-3 text-[15px]">
+              {[0, 1].map((k) => (
+                <div key={k} className="flex gap-3" aria-hidden={k === 1}>
+                  {BUILT_ON.map((s) => (
+                    <span
+                      key={s + k}
+                      className="rounded-full border bg-card px-4 py-1.5 font-medium whitespace-nowrap text-foreground/80"
+                    >
+                      {s}
+                    </span>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </section>
 
-      <Suspense fallback={<div className="h-12" />}>
-        <Ledger />
-      </Suspense>
+      <section id="how" className="mx-auto max-w-[1240px] scroll-mt-20 px-5 py-8">
+        <HowItWorks />
+      </section>
 
-      <section className="py-14">
-        <h2 className="text-[22px] font-semibold tracking-[-0.02em]">How one clip moves</h2>
-        <ol className="mt-6 grid gap-x-10 md:grid-cols-2">
-          {LOOP.map((step, i) => (
-            <li key={step.what} className="flex gap-4 border-t py-4">
-              <span className="w-6 shrink-0 pt-0.5 font-mono text-[13px] text-muted-foreground tabular">
-                {i + 1}
+      <section id="try" className="mx-auto max-w-[1240px] scroll-mt-20 px-5 py-16">
+        <h2 className="text-[32px] font-semibold tracking-tight">Try it in three clicks</h2>
+        <p className="mt-2 text-[16px] text-muted-foreground">Live on testnets. No real money.</p>
+        <div className="mt-8 grid gap-4 md:grid-cols-3">
+          {TRY.map(({ n, icon: I, title, body, cta, href }) => (
+            <Link
+              key={n}
+              href={href}
+              className="group flex flex-col items-start gap-4 rounded-[14px] border bg-card p-6 transition-colors hover:border-input hover:bg-secondary"
+            >
+              <span className="flex w-full items-center justify-between">
+                <span className="grid size-8 place-items-center rounded-full border border-input text-[15px] text-muted-foreground tabular">
+                  {n}
+                </span>
+                <I className="size-[18px] text-muted-foreground" />
               </span>
-              <p className="text-[15px] text-pretty">
-                <span className="font-medium">{step.who}</span>{" "}
-                <span className="text-muted-foreground">{step.what}</span>
-              </p>
-            </li>
+              <span className="text-[19px] font-semibold">{title}</span>
+              <span className="text-[15px] leading-relaxed text-muted-foreground">{body}</span>
+              <span className="mt-auto inline-flex items-center gap-1.5 text-[15px] font-medium">
+                {cta}
+                <ArrowRight className="size-[15px] transition-transform group-hover:translate-x-0.5" />
+              </span>
+            </Link>
           ))}
-        </ol>
+        </div>
       </section>
 
-      <section className="grid grid-cols-1 gap-8 border-t py-12 md:grid-cols-3">
-        <Principle title="One person, one slot">
-          World ID proves you're a unique human without telling us who you are. A dataset of 100 clips really
-          has 100 people in it.
-        </Principle>
-        <Principle title="You own the licence">
-          Your licence is a record on Arkiv owned by your wallet, not a row in our database. Nobody else can
-          change it.
-        </Principle>
-        <Principle title="Spending a prompt can't bypass">
-          Agents pay only within a fixed budget. Anything bigger waits for a human to approve it with World
-          ID.
-        </Principle>
+      <section className="mx-auto max-w-[1240px] px-5 pb-20">
+        <div className="flex items-end justify-between gap-4">
+          <h2 className="text-[24px] font-semibold tracking-tight">Open now</h2>
+          <Link
+            href="/tasks"
+            className="inline-flex items-center gap-1 text-[14px] text-muted-foreground hover:text-foreground"
+          >
+            All tasks <ArrowRight className="size-4" />
+          </Link>
+        </div>
+        <Suspense
+          fallback={
+            <div className="mt-5 grid gap-3 md:grid-cols-2">
+              <Skeleton className="h-[164px] rounded-[18px]" />
+              <Skeleton className="h-[164px] rounded-[18px]" />
+            </div>
+          }
+        >
+          <OpenTasks />
+        </Suspense>
       </section>
+
+      <SiteFooter />
     </div>
   )
 }
 
-function Principle({ title, children }: { title: string; children: React.ReactNode }) {
+function StatsShell() {
+  return <div className="mt-10 h-[84px] max-w-md border-t" />
+}
+
+async function Stats() {
+  const res = await getCounts()
+  if (!res.ok) return <StatsShell />
+  const c = res.data
+  const stats = [
+    ["Clips checked", c.verifications],
+    ["Payouts", c.receipts],
+    ["Licences", c.licences],
+  ] as const
   return (
-    <div>
-      <h3 className="text-[16px] font-semibold">{title}</h3>
-      <p className="mt-2 text-[15px] text-muted-foreground text-pretty">{children}</p>
-    </div>
+    <dl className="mt-10 grid max-w-md grid-cols-3 gap-4 border-t pt-6">
+      {stats.map(([label, v]) => (
+        <div key={label}>
+          <dt className="text-[13px] text-muted-foreground">{label}</dt>
+          <dd className="mt-1 text-[26px] font-semibold tabular">{v}</dd>
+        </div>
+      ))}
+    </dl>
   )
 }
 
-async function LiveTask() {
+async function OpenTasks() {
   const res = await getOpenTasks()
-  const task = res.ok ? res.data[0] : undefined
-  if (!task) {
+  if (!res.ok || res.data.length === 0) {
     return (
-      <div className="rounded-[18px] border border-dashed p-6 text-[15px] text-muted-foreground">
-        {res.ok ? "No open tasks this minute. New ones appear as robots find gaps." : "Syncing with Arkiv…"}
+      <div className="mt-5 rounded-[18px] border border-dashed p-6 text-[15px] text-muted-foreground">
+        {res.ok
+          ? "No open tasks right now. Agents post new ones as robots find gaps."
+          : "Loading from Arkiv…"}
       </div>
     )
   }
-  return <TaskCard task={task} />
-}
-
-async function Ledger() {
-  const res = await getCounts()
-  if (!res.ok) return null
-  const c = res.data
-  const items = [
-    [c.openTasks, c.openTasks === 1 ? "open task" : "open tasks"],
-    [c.claims, c.claims === 1 ? "slot claimed" : "slots claimed"],
-    [c.verifications, c.verifications === 1 ? "clip checked" : "clips checked"],
-    [c.receipts, c.receipts === 1 ? "payment settled" : "payments settled"],
-    [c.licences, c.licences === 1 ? "licence issued" : "licences issued"],
-  ] as const
   return (
-    <section
-      aria-label="Live totals from Arkiv"
-      className="flex flex-wrap items-center gap-x-6 gap-y-3 border-y py-4"
-    >
-      {items.map(([n, label]) => (
-        <span key={label} className="text-[15px]">
-          <span className="font-mono font-medium tabular">{n}</span>{" "}
-          <span className="text-muted-foreground">{label}</span>
-        </span>
+    <ul className="mt-5 grid gap-3 md:grid-cols-2">
+      {res.data.slice(0, 4).map((t) => (
+        <li key={t.key}>
+          <TaskSheet task={t} />
+        </li>
       ))}
-      <Link
-        href="/explorer?q=counts"
-        className="ml-auto inline-flex h-7 items-center gap-1.5 rounded-full border px-2.5 text-[12.5px] font-medium text-foreground/80 hover:border-foreground/30"
-      >
-        <span className="size-1.5 rounded-full bg-signal" aria-hidden="true" />
-        Counted on Arkiv
-      </Link>
-    </section>
+    </ul>
   )
 }

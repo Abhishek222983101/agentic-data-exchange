@@ -127,3 +127,6 @@ Need from teammate: SESSION-HANDOFF.md, 05-SWARM-DOCS-CHECK.md.
 | D25 | UI: own grey/black brand, light + dark, Arkiv orange accent; tessera-guard/d3coy as visual reference only (from-scratch rule) | DECIDED |
 | D26 | Clip verifier: Gemini 3 Flash, one call with video + audio, strict schema, temperature 0; code decides; unsure → human review. Claude Haiku only for agent text. Whisper and second-opinion model dropped | DECIDED |
 | D27 | x402 sells the clip (decryption key + licence); purchases auto under the policy threshold; Agent Pass approval only for payouts above it (bonus path) | DECIDED |
+
+## 7 Nov 2026, 07:40 IST: reuse of the TESSERA landing
+The team checked with ETHGlobal mentors and reused its own TESSERA landing components (pixel hero, orbit bento, halftone footer, isometric machine) for the Paradigm landing, rewritten for Paradigm. Disclosed in adx/AI_USAGE.md. Dark theme is now the default, with a toggle to the cream light theme.

@@ -25,7 +25,7 @@ export function TaskSheet({ task }: { task: TaskDTO }) {
       <Drawer.Trigger asChild>
         <button
           type="button"
-          className="block w-full rounded-[18px] border border-black/[0.04] bg-card p-5 text-left shadow-[0_1px_2px_rgba(17,18,20,0.04)] transition-transform active:scale-[0.99]"
+          className="block w-full rounded-[18px] border border-border bg-card p-5 text-left transition-transform active:scale-[0.99]"
         >
           <TaskCardBody task={task} />
         </button>
@@ -35,7 +35,7 @@ export function TaskSheet({ task }: { task: TaskDTO }) {
           type="button"
           aria-label="Close"
           onClick={() => setOpen(false)}
-          className="fixed inset-0 z-50 bg-[rgba(17,18,20,0.42)] animate-in fade-in duration-300"
+          className="fixed inset-0 z-50 bg-black/55 animate-in fade-in duration-300"
         />
       ) : null}
       <Drawer.Portal>
@@ -43,7 +43,7 @@ export function TaskSheet({ task }: { task: TaskDTO }) {
           aria-describedby={undefined}
           className="fixed inset-x-0 bottom-0 z-50 mx-auto flex max-h-[88dvh] max-w-[520px] flex-col rounded-t-[24px] bg-card outline-none"
         >
-          <div className="mx-auto mt-2.5 h-1 w-9 shrink-0 rounded-full bg-black/15" aria-hidden="true" />
+          <div className="mx-auto mt-2.5 h-1 w-9 shrink-0 rounded-full bg-foreground/20" aria-hidden="true" />
           <div className="overflow-y-auto px-6 pt-4 pb-3">
             <Drawer.Title className="text-[22px] leading-tight font-semibold tracking-[-0.02em] text-balance">
               {task.title}
@@ -67,7 +67,7 @@ export function TaskSheet({ task }: { task: TaskDTO }) {
                 <h3 className="text-[11px] font-semibold tracking-[0.08em] text-muted-foreground">
                   WHAT TO FILM
                 </h3>
-                <ol className="mt-2 divide-y divide-black/[0.06] border-t border-black/[0.06]">
+                <ol className="mt-2 divide-y divide-border border-t border-border">
                   {r.steps.map((s, i) => (
                     <li key={s.name} className="flex gap-3 py-3">
                       <span className="grid size-[22px] shrink-0 place-items-center rounded-full bg-foreground text-[12px] font-semibold text-background tabular">
@@ -89,7 +89,7 @@ export function TaskSheet({ task }: { task: TaskDTO }) {
             ) : null}
           </div>
 
-          <div className="border-t border-black/[0.06] px-6 pt-3 pb-[max(env(safe-area-inset-bottom),16px)]">
+          <div className="border-t border-border px-6 pt-3 pb-[max(env(safe-area-inset-bottom),16px)]">
             {state === "open" ? (
               <ClaimFlow taskKey={task.key} title={task.title} />
             ) : (

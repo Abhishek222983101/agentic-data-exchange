@@ -11,7 +11,7 @@ export function PipelineSteps({ events }: { events: PipelineEvent[] }) {
   const failed = events.find((e) => !e.ok)
   const firstPending = PIPELINE_STEPS.findIndex((s) => !byStep.has(s.id))
   return (
-    <ol aria-live="polite" className="divide-y divide-black/[0.06] border-y border-black/[0.06]">
+    <ol aria-live="polite" className="divide-y divide-border border-y border-border">
       {PIPELINE_STEPS.map((s, i) => {
         const ev = byStep.get(s.id)
         const state = ev
@@ -37,7 +37,7 @@ export function PipelineSteps({ events }: { events: PipelineEvent[] }) {
                 state === "done" && "bg-success-soft text-success-text",
                 state === "fail" && "bg-danger text-white",
                 state === "active" && "bg-signal",
-                (state === "waiting" || state === "skipped") && "border border-black/15",
+                (state === "waiting" || state === "skipped") && "border border-border",
               )}
             >
               {state === "done" ? <Check className="size-3" strokeWidth={3} /> : null}

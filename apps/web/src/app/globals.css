@@ -39,9 +39,10 @@
   --color-success-soft: var(--success-soft);
   --color-success-text: var(--success-text);
 
-  --font-sans: var(--font-inter);
+  --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-inter);
+  --font-heading: var(--font-geist-sans);
+  --font-serif: var(--font-instrument);
 
   --radius-sm: 6px;
   --radius-md: 10px;
@@ -87,32 +88,36 @@
 }
 
 .dark {
-  --background: #09090b;
-  --foreground: #fafafa;
-  --card: #131316;
-  --card-foreground: #fafafa;
-  --popover: #18181b;
-  --popover-foreground: #fafafa;
-  --primary: #fafafa;
-  --primary-foreground: #09090b;
-  --secondary: #1f1f23;
-  --secondary-foreground: #fafafa;
-  --muted: #1f1f23;
-  --muted-foreground: #a1a1aa;
-  --accent: #1f1f23;
-  --accent-foreground: #fafafa;
-  --destructive: #ef4444;
-  --border: #27272a;
-  --input: #27272a;
+  /* Default theme: near-black ink with a faint dot grid, white primary, one orange signal. */
+  --background: #0a0a0b;
+  --foreground: #f2f2f3;
+  --card: #121214;
+  --card-foreground: #f2f2f3;
+  --popover: #17171a;
+  --popover-foreground: #f2f2f3;
+  --primary: #f2f2f3;
+  --primary-foreground: #0a0a0b;
+  --secondary: #1c1c20;
+  --secondary-foreground: #f2f2f3;
+  --muted: #1c1c20;
+  --muted-foreground: #9c9ca5;
+  --accent: #1c1c20;
+  --accent-foreground: #f2f2f3;
+  --destructive: #f0545a;
+  --border: #242428;
+  --input: #2c2c31;
   --ring: #fe7446;
-  --sunken: #0e0e10;
+  --sunken: #17171a;
 
   --signal: #fe7446;
   --signal-ink: #1c0a03;
-  --signal-soft: #2a140c;
-  --success: #22c55e;
-  --warning: #f59e0b;
-  --danger: #ef4444;
+  --signal-soft: #2a160d;
+  --signal-text: #ff9a76;
+  --success: #3fb27f;
+  --success-soft: #11251b;
+  --success-text: #5fd39c;
+  --warning: #f5b83d;
+  --danger: #f0545a;
 }
 
 @layer base {
@@ -139,6 +144,13 @@
 }
 
 @layer utilities {
+  .dot-grid {
+    background-image: radial-gradient(
+      color-mix(in oklab, var(--foreground) 9%, transparent) 1px,
+      transparent 1px
+    );
+    background-size: 18px 18px;
+  }
   .tabular {
     font-variant-numeric: tabular-nums;
   }
@@ -154,6 +166,32 @@
   .text-pretty {
     text-wrap: pretty;
   }
+}
+
+/* Landing: "Built on" marquee and the isometric hero figure (no card, blends into the page). */
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+.marquee {
+  animation: marquee 36s linear infinite;
+}
+.hero-iso {
+  background: transparent !important;
+  border-color: transparent !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+}
+.hero-iso .ik-footer {
+  opacity: 0.75;
+  padding: 0 4px;
+}
+.dark .hero-iso {
+  filter: drop-shadow(0 30px 50px rgba(0, 0, 0, 0.45));
 }
 
 @media (prefers-reduced-motion: reduce) {

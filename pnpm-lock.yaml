@@ -166,6 +166,9 @@ importers:
       react-dom:
         specifier: 19.3.0
         version: 19.3.0(react@19.3.0)
+      react-isokit:
+        specifier: 0.5.0
+        version: 0.5.0(react@19.3.0)
       server-only:
         specifier: ^0.0.1
         version: 0.0.1
@@ -3828,6 +3831,12 @@ packages:
     resolution: {integrity: sha512-JDk8dgif51OjFoDE70+OT9ICyYr+69HlmihNwp1+Nsfbna3t5sIiCa9ZJktDmQ4/1b/rn26hIAR2uYXDMr5r0Q==}
     peerDependencies:
       react: ^19.3.0
+
+  react-isokit@0.5.0:
+    resolution: {integrity: sha512-9nGXd9ZLMqLMbAh/hVzjcI7yT8UUOPofOdMRu0Ty2tgmyj2JeOeWjJfPLxhO8WNEhkPBYu2/ZjSivhUY/Z93Ew==}
+    engines: {node: '>=20'}
+    peerDependencies:
+      react: '>=18'
 
   react-remove-scroll-bar@2.3.8:
     resolution: {integrity: sha512-9r+yi9+mgU33AKcj6IbT9oRCO78WriSj6t/cF8DWBZJ9aOGPOTEDvdUDz1FwKim7QXWwmHqtdHnRJfhAxEG46Q==}
@@ -7757,6 +7766,11 @@ snapshots:
     dependencies:
       react: 19.3.0
       scheduler: 0.28.0
+
+  react-isokit@0.5.0(react@19.3.0):
+    dependencies:
+      react: 19.3.0
+      zod: 4.6.7
 
   react-remove-scroll-bar@2.3.8(@types/react@19.3.0)(react@19.3.0):
     dependencies:
