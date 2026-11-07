@@ -2,7 +2,7 @@
 
 // Full-screen recorder: challenge pinned on top, big record button, 3-2-1, 15–30 s ring, preview,
 // retake / submit, then upload with real progress and automatic retries.
-import { ArrowLeft, Check, Hand, Loader2, RotateCcw, Upload } from "lucide-react"
+import { Check, Hand, Loader2, RotateCcw, Upload, X } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useCallback, useEffect, useRef, useState } from "react"
@@ -225,34 +225,54 @@ export function Recorder({ claim }: { claim: LocalClaim }) {
         />
       ) : null}
 
-      {/* top bar: back + challenge */}
-      <div className="relative z-10 flex items-start gap-3 bg-gradient-to-b from-black/70 to-transparent p-4 pt-safe">
+      {/* top bar: close + challenge (Paper design: one pill, always visible while filming) */}
+      <div className="relative z-10 flex items-center gap-2 bg-gradient-to-b from-black/70 to-transparent px-4 pt-[max(env(safe-area-inset-top),16px)] pb-4">
         <Link
           href={`/tasks/${claim.taskKey}`}
-          aria-label="Back to the task"
-          className="mt-[env(safe-area-inset-top)] grid size-11 shrink-0 place-items-center rounded-full bg-white/15 backdrop-blur"
+          aria-label="Close the camera"
+          className="grid size-10 shrink-0 place-items-center rounded-full bg-black/45 backdrop-blur"
           onClick={(e) => {
             if (phase.kind === "recording" || phase.kind === "review") {
               if (!confirm("Discard this recording?")) e.preventDefault()
             }
           }}
         >
-          <ArrowLeft className="size-5" />
+          <X className="size-4.5" />
         </Link>
-        <div className="mt-[env(safe-area-inset-top)] flex flex-1 items-center justify-end gap-2">
-          <div className="rounded-2xl bg-signal px-3.5 py-2 text-signal-ink">
-            <div className="text-[11px] opacity-80">Say</div>
-            <div className="text-[20px] leading-none font-semibold">{claim.challenge.word}</div>
-          </div>
-          <div className="rounded-2xl bg-white px-3.5 py-2 text-black">
-            <div className="text-[11px] opacity-70">Show</div>
-            <div className="flex items-center gap-1 text-[20px] leading-none font-semibold">
-              {claim.challenge.fingers}
-              <Hand className="size-4" aria-label="fingers" />
-            </div>
+        <div className="flex flex-1 justify-center">
+          <div className="inline-flex items-center gap-2 rounded-full bg-signal px-3.5 py-2 text-[13px] font-semibold tracking-[0.04em] text-signal-ink shadow-lg">
+            <span
+              className="size-1.5 animate-pulse rounded-full bg-signal-ink motion-reduce:animate-none"
+              aria-hidden="true"
+            />
+            SAY {claim.challenge.word.toUpperCase()} · {claim.challenge.fingers}
+            <Hand className="size-3.5" aria-label="fingers" />
           </div>
         </div>
+        <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-black/45 px-2.5 py-1.5 text-[11px] font-semibold tracking-[0.06em] text-white backdrop-blur">
+          <Check className="size-3 text-success" strokeWidth={3} aria-hidden="true" />
+          HUMAN
+        </span>
       </div>
+
+      {/* framing guides over the live camera */}
+      {showLive ? (
+        <div
+          className="pointer-events-none absolute inset-x-5 top-[88px] bottom-[210px] z-[5]"
+          aria-hidden="true"
+        >
+          <span className="absolute top-0 left-0 size-7 rounded-tl-[10px] border-t-2 border-l-2 border-white/80" />
+          <span className="absolute top-0 right-0 size-7 rounded-tr-[10px] border-t-2 border-r-2 border-white/80" />
+          <span className="absolute bottom-0 left-0 size-7 rounded-bl-[10px] border-b-2 border-l-2 border-white/80" />
+          <span className="absolute right-0 bottom-0 size-7 rounded-br-[10px] border-r-2 border-b-2 border-white/80" />
+          {phase.kind === "ready" ? (
+            <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 text-center [text-shadow:0_1px_8px_rgba(0,0,0,0.7)]">
+              <div className="text-[15px] font-medium">Film from directly above</div>
+              <div className="mt-1 text-[12.5px] text-white/65">Whole item and both hands in view</div>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
 
       {/* centre messages */}
       <div className="relative z-10 flex flex-1 items-center justify-center p-6 text-center">
@@ -296,12 +316,11 @@ export function Recorder({ claim }: { claim: LocalClaim }) {
       <div className="relative z-10 bg-gradient-to-t from-black/80 to-transparent px-6 pt-6 pb-[max(env(safe-area-inset-bottom),24px)]">
         {phase.kind === "ready" || phase.kind === "recording" || phase.kind === "countdown" ? (
           <div className="flex flex-col items-center gap-3">
-            <div className="h-5 font-mono text-[15px] tabular" aria-live="polite">
-              {phase.kind === "recording"
-                ? elapsed < MIN_S
-                  ? `${Math.floor(elapsed)} s, keep going to ${MIN_S} s`
-                  : `${Math.floor(elapsed)} s, stop when you are done`
-                : `${MIN_S}–${MAX_S} seconds`}
+            <div className="flex items-baseline gap-1.5 tabular" aria-live="polite">
+              <span className="font-mono text-[26px] font-semibold">
+                {clock(phase.kind === "recording" ? elapsed : 0)}
+              </span>
+              <span className="font-mono text-[13px] text-white/50">/ {clock(MAX_S)}</span>
             </div>
             <button
               type="button"
@@ -331,6 +350,20 @@ export function Recorder({ claim }: { claim: LocalClaim }) {
                 )}
               />
             </button>
+            <div className="text-center">
+              <div className="text-[14px] font-medium">
+                {phase.kind === "recording"
+                  ? elapsed < MIN_S
+                    ? `Keep going to ${MIN_S} s`
+                    : "Tap to stop"
+                  : phase.kind === "countdown"
+                    ? "Get ready"
+                    : "Tap to record"}
+              </div>
+              <div className="mt-0.5 text-[12px] text-white/55">
+                {MIN_S}–{MAX_S} s · stops by itself at {MAX_S} s
+              </div>
+            </div>
           </div>
         ) : null}
 
@@ -395,4 +428,9 @@ export function Recorder({ claim }: { claim: LocalClaim }) {
       </div>
     </div>
   )
+}
+
+function clock(seconds: number): string {
+  const t = Math.floor(seconds)
+  return `${String(Math.floor(t / 60)).padStart(2, "0")}:${String(t % 60).padStart(2, "0")}`
 }
