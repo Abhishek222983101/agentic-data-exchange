@@ -90,7 +90,7 @@ export function WalletCard() {
               Too many rejected clips: this World ID can't claim new tasks.
             </p>
           ) : null}
-          <div className="mt-3 flex flex-wrap gap-2 [&_a]:border-background/25 [&_a]:text-background">
+          <div className="mt-3 flex flex-wrap gap-2 [&_a]:border-background/25 [&_a]:bg-white/10 [&_a]:text-background">
             <ProofLink kind="arkiv" href={links.arkivAddress(w.address)} label="Licences on Arkiv" />
             {hedera ? (
               <ProofLink kind="hedera" href={links.hashscanAccount(hedera)} label={`Paid to ${hedera}`} />

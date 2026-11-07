@@ -35,7 +35,7 @@ export function MePanel() {
     <div className="grid grid-cols-1 gap-5 pb-10 lg:grid-cols-[360px_1fr]">
       <section className="rounded-[20px] bg-foreground p-5 text-background">
         <div className="text-[13px] opacity-70">Paid to you</div>
-        <div className="mt-1 font-mono text-[40px] leading-none font-medium tracking-tight tabular">
+        <div className="mt-1 text-[44px] leading-none font-semibold tracking-[-0.04em] tabular">
           {earned.toFixed(2)}
           <span className="ml-2 font-sans text-[15px] font-normal opacity-70">USDC</span>
         </div>

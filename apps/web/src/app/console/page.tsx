@@ -39,13 +39,13 @@ export default function ConsolePage() {
             </h2>
             <dl className="mt-4 grid grid-cols-2 gap-y-4 text-[14px]">
               <dt className="text-muted-foreground">Pays on its own up to</dt>
-              <dd className="text-right font-mono tabular">{POLICY.auto} USDC</dd>
+              <dd className="text-right font-medium tabular">{POLICY.auto} USDC</dd>
               <dt className="text-muted-foreground">Above that</dt>
               <dd className="text-right">You approve with World ID</dd>
               <dt className="text-muted-foreground">Never more than</dt>
-              <dd className="text-right font-mono tabular">{POLICY.hardCap} USDC a clip</dd>
+              <dd className="text-right font-medium tabular">{POLICY.hardCap} USDC a clip</dd>
               <dt className="text-muted-foreground">Daily budget</dt>
-              <dd className="text-right font-mono tabular">{POLICY.daily} USDC</dd>
+              <dd className="text-right font-medium tabular">{POLICY.daily} USDC</dd>
             </dl>
             <div className="mt-5 flex flex-wrap gap-2">
               <ProofLink
